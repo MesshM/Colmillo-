@@ -1,6 +1,7 @@
 # Colmillo
 
-Reemplazo liviano de Razer Synapse para el **Razer Cobra** (USB, PID 0x00A3).
+Reemplazo liviano de Razer Synapse para el **Razer Cobra** (USB, PID 0x00A3), con la luz
+de la RAM Kingston FURY y de la grafica Gigabyte RX 9060 XT.
 Sin cuentas ni telemetria. C# + WPF sobre .NET 9.
 
 | | Synapse 4 | Colmillo |
@@ -13,11 +14,12 @@ Sin cuentas ni telemetria. C# + WPF sobre .NET 9.
 ## Que hace
 
 - **Rendimiento**: hasta 5 etapas de DPI (200-8500, paso 100) y sondeo 125/500/1000 Hz.
-- **Iluminacion**: mouse y RAM, todos juntos (apagado, estatico, respiracion, espectro)
-  o por separado. Mouse: ademas reactivo y respiracion aleatoria. RAM Kingston FURY RGB:
-  ademas arcoiris, dinamico, cometa, llama y crepusculo, con una paleta propia de hasta 10
-  colores para respiracion, dinamico y cometa. La grafica Gigabyte RX 9060 XT
-  aparece como no disponible: el driver actual de AMD bloquea su I2C (ver PROTOCOLO.md).
+- **Iluminacion**: mouse, RAM y grafica, todos juntos (apagado, estatico, respiracion,
+  espectro) o por separado. Mouse: ademas reactivo y respiracion aleatoria. RAM Kingston
+  FURY RGB: ademas arcoiris, dinamico, cometa, llama y crepusculo, con una paleta propia de
+  hasta 10 colores para respiracion, dinamico y cometa. Grafica Gigabyte RX 9060 XT
+  (RGB Fusion): ademas destello y doble destello, con velocidad; no necesita Gigabyte
+  Control Center ni administrador.
 - **Botones**: capa normal y Hypershift. Teclas/atajos, multimedia, DPI, doble clic y
   turbo se graban en el mouse. Macros y "abrir programa" corren en Colmillo.
 - **Macros**: grabador (teclado y opcionalmente clics), editor de pasos, 4 modos.
@@ -101,6 +103,9 @@ El protocolo, y de donde se saco, esta en [PROTOCOLO.md](PROTOCOLO.md).
 - **Dos tareas y no una con una marca**: la copia que lanza el Programador de tareas no
   veia un valor de HKCU escrito por la copia sin elevar. Una tarea sin disparador para
   "abrir con ventana" evita pasar estado entre procesos.
+- **Grafica por ADL, abierto y cerrado en cada uso**: el controlador de luz responde una
+  sola lectura por sesion de ADL, y asi `atiadlxx.dll` no queda cargada en la bandeja.
+  Guardar en la tarjeta escribe su memoria: se hace 3 s despues del ultimo cambio.
 - **Modulo de PawnIO incrustado**: `SmbusPIIX4.bin` de PawnIO.Modules 0.2.11 (LGPL-2.1,
   `Assets/PawnIO/COPYING`). El driver PawnIO se instala aparte (winget `namazso.PawnIO`).
 - **Macros por F13-F24**: el Cobra no guarda macros. El boton manda una tecla F13-F24
@@ -119,3 +124,4 @@ El protocolo, y de donde se saco, esta en [PROTOCOLO.md](PROTOCOLO.md).
 - El firmware no responde a leer brillo ni asignaciones de botones: Colmillo es la
   fuente de verdad y las reescribe al conectar.
 - Con Synapse abierto, Synapse pisa la luz y el modo. La app avisa y ofrece cerrarlo.
+- Con Gigabyte Control Center abierto, su RGB Fusion puede pisar la luz de la grafica.

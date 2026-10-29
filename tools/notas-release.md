@@ -1,4 +1,4 @@
-Reemplazo liviano de Razer Synapse para el **Razer Cobra** y la **RAM Kingston FURY RGB**. Sin cuentas ni telemetría.
+Reemplazo liviano de Razer Synapse para el **Razer Cobra**, con la luz de la **RAM Kingston FURY RGB** y de la **gráfica Gigabyte RX 9060 XT**. Sin cuentas ni telemetría.
 
 ### Instalar
 
@@ -6,12 +6,9 @@ Baja **Colmillo-Setup.exe** y ejecútalo. Ofrece iniciar con Windows y controlar
 
 ### Novedades
 
-- **Instalador** (Inno Setup): menú Inicio, "Aplicaciones instaladas" con desinstalador, inicio con Windows opcional e instalación de PawnIO opcional.
-- **Actualizaciones desde Ajustes**: "Buscar actualizaciones" consulta GitHub solo cuando lo pides, verifica el SHA-256 del instalador y se actualiza sola.
-- **Paleta propia para la RAM**: hasta 10 colores para respiración, dinámico y cometa.
-- El instalador y el desinstalador cierran Colmillo aunque corra como administrador.
+- **Luz de la gráfica Gigabyte** (RGB Fusion) en Iluminación: apagado, estático, respiración, destello, doble destello y ciclo de colores, con brillo y velocidad. Entra en "Todos juntos" con el mouse y la RAM.
+- Habla directo con el driver de AMD: no hace falta Gigabyte Control Center ni administrador. El efecto se guarda en la tarjeta, así sigue aunque Colmillo esté cerrado.
 
-### Sobre el mouse y la gráfica
+### Nota
 
-- El firmware del Cobra no tiene velocidad en respiración ni espectro (Synapse tampoco la ofrece) y no acepta cuadros enviados desde el PC; el detalle está en PROTOCOLO.md.
-- La gráfica Gigabyte RX 9060 XT sigue no disponible con el driver actual de AMD.
+Si Gigabyte Control Center sigue abierto, su RGB Fusion puede pisar el color de la gráfica.

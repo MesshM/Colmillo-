@@ -24,6 +24,7 @@ public partial class App : Application
     public AppSettings Settings { get; private set; } = new();
     public DeviceService Device { get; private set; } = null!;
     public RamService Ram { get; private set; } = null!;
+    public GpuService Gpu { get; private set; } = null!;
 
     /// <summary>
     /// Relanza Colmillo como administrador (un aviso UAC). La copia elevada crea la tarea de
@@ -128,14 +129,16 @@ public partial class App : Application
 
         _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); Settings.Save(); };
 
-        if (Settings.LightingTogether) Settings.SyncRamToMouse();
+        if (Settings.LightingTogether) Settings.SyncToMouse();
         Ram = new RamService(Settings);
         Ram.StateChanged += () => Dispatcher.BeginInvoke(() => _window?.Refresh());
+        Gpu = new GpuService(Settings);
+        Gpu.StateChanged += () => Dispatcher.BeginInvoke(() => _window?.Refresh());
 
         SystemIntegration.SetStartWithWindows(Settings.StartWithWindows);
         // Arrancando en la bandeja, se recorta la memoria recien despues de conectar:
         // el JIT y el primer I/O HID son lo que mas infla el arranque.
-        Task.WhenAll(Device.ConnectAndApplyAsync(), Ram.ConnectAndApplyAsync()).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+        Task.WhenAll(Device.ConnectAndApplyAsync(), Ram.ConnectAndApplyAsync(), Gpu.ConnectAndApplyAsync()).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
         {
             if (_window is null) SystemIntegration.TrimMemory();
         }));
@@ -274,6 +277,7 @@ public partial class App : Application
         _tray?.Dispose();
         Device.Dispose();
         Ram.Dispose();
+        Gpu.Flush();
         Shutdown();
     }
 }

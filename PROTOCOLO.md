@@ -154,15 +154,44 @@ Direcciones en esta PC (escaneo de solo lectura):
 Arcoiris y espectro son el mismo modo: los distingue el retardo (`0D` = 0 o 4).
 Verificado contra los dos modulos reales (estatico rojo y espectro).
 
-## Grafica: Gigabyte RX 9060 XT Gaming OC 16G (no disponible)
+## Grafica: Gigabyte RX 9060 XT Gaming OC 16G
 
-El controlador es "RGB Fusion 2 GPU" en I2C `0x73` (paquetes de 8 bytes: `88` modo,
-`40`/`B0`/`B1` colores, `AB` identificacion). Se llega por la API del driver de AMD
-(`ADL_Display_WriteAndReadI2C`, linea 1). Con el driver 32.0.32015.7029 **toda**
-transferencia I2C falla: ADL, ADL2, LargePayload y SMU, como usuario, administrador y
-SYSTEM. La propia libreria de Gigabyte (`GvDisplayA.dll`, `GvWriteI2C`) falla igual
-(`0x20000210`) y los registros de Gigabyte Control Center muestran `LedSet SendData fail`.
-Hay que volver a probar con otro driver.
+Sacado de `ucVga.dll` de Gigabyte Control Center (.NET, descompilado con ILSpy):
+clases `GvLedApiEx` e `I2CApiEx`. Esta tarjeta no usa el "RGB Fusion 2 GPU" de `0x73`
+de modelos anteriores (y de OpenRGB) sino un controlador nuevo:
+
+- I2C por la API del driver de AMD: `ADL2_Display_WriteAndReadI2C`, linea 1, direccion
+  `0x75` (`0xEA` en 8 bits), 50 kHz al escribir y 100 kHz al leer. Funciona **sin
+  administrador** y sin ninguna DLL de Gigabyte.
+- Paquetes de 64 bytes: `[comando, 0x01, datos...]`, el resto en cero.
+- El `device.db` de Gigabyte (JSON, clave `VID_SVID_SSID_DID`) da `UiId 1` para
+  `1002_1458_2429_7590`: una sola zona.
+
+| Comando | Uso |
+|---|---|
+| `10 01` | leer version (4 bytes: `01 01 01 01` = 1.1) |
+| `11 01` | leer modelo (4 bytes: `02 01 24 29`, el SSID) |
+| `12 01 efecto velocidad brillo R G B 0 0` | cambiar el efecto (al instante, no se guarda) |
+| `13 01` | guardar el efecto en la memoria de la tarjeta |
+| `16 01 ...` | color en tiempo real para la sincronizacion de RGB Fusion |
+
+Efectos (`12`): 0 apagado, 1 estatico, 2 respiracion, 3 destello, 4 doble destello,
+5 ciclo de colores. Velocidad y brillo van de 0 a 10. Apagado manda el color en cero.
+Gigabyte espera 120 ms tras cada escritura y 200 ms tras cada lectura.
+
+El controlador responde **una sola lectura** por sesion de ADL: la segunda falla (y la
+escritura siguiente tambien) hasta crear otra sesion. Por eso Colmillo lee solo el modelo
+para detectarla, y abre y cierra ADL en cada uso; los registros de Gigabyte Control
+Center muestran el mismo `GetModelSSID ReadData fail`.
+
+Por que las primeras pruebas fallaban: se mandaba el paquete de 8 bytes a `0x73` con la
+estructura de `GvDisplayA.dll` incompleta (`nI2cSpeed` y `nDDCPort` en cero). `ucVga`
+llama a `I2CApiEx.SendData(..., nSavePort = 194)` pero adentro pisa la direccion con
+`234` (`0xEA`).
+
+Gigabyte publica sus modulos en
+`mb.download.gigabyte.com/FileList/Swhttp/LiveUpdate4/GCC/<ApName>/ver2.ini` y
+`.../GCC/<ApName>/<ApName>_<version>.exe` (NSIS firmado, se instala con `/S`).
 
 ## Macros
 

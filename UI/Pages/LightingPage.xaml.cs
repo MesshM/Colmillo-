@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Colmillo.Core;
+using Colmillo.Core.Gpu;
 using Colmillo.Core.Hid;
 using Colmillo.Core.Ram;
 using Colmillo.Core.Razer;
@@ -10,17 +11,17 @@ using Colmillo.UI.Controls;
 namespace Colmillo.UI.Pages;
 
 /// <summary>
-/// Iluminacion de mouse y RAM. "Todos juntos" ofrece solo los efectos que tienen los dos
-/// (apagado, estatico, respiracion, espectro) y escribe en el perfil de cada uno, asi al
-/// pasar a "Por separado" cada dispositivo sigue donde quedo.
+/// Iluminacion de mouse, RAM y grafica. "Todos juntos" ofrece solo los efectos que tienen
+/// todos (apagado, estatico, respiracion, espectro) y escribe en el perfil de cada uno, asi
+/// al pasar a "Por separado" cada dispositivo sigue donde quedo.
 /// </summary>
 public partial class LightingPage : PageBase
 {
-    enum Target { Together, Mouse, Ram }
+    enum Target { Together, Mouse, Ram, Gpu }
 
     sealed record Fx(string Key, string Label, string Glyph, int Colors = 0, bool Speed = false);
 
-    // Comunes a mouse y RAM. La grafica tambien los tiene, pero hoy no se puede controlar.
+    // Comunes a mouse, RAM y grafica.
     static readonly Fx[] TogetherFx =
     [
         new("off", "Apagado", ""),
@@ -45,10 +46,20 @@ public partial class LightingPage : PageBase
         new("twilight", "Crepúsculo", "", Speed: true),
     ];
 
+    // La grafica no tiene velocidad en estatico ni dos colores en respiracion.
+    static readonly Fx[] GpuFx =
+    [
+        .. TogetherFx,
+        new("flash", "Destello", "", Colors: 1, Speed: true),
+        new("dflash", "Doble destello", "", Colors: 1, Speed: true),
+    ];
+
     Target _target;
 
     static RamService RamSvc => App.Current.Ram;
     static RamProfile R => App.Current.Settings.Ram;
+    static GpuService GpuSvc => App.Current.Gpu;
+    static GpuProfile G => App.Current.Settings.Gpu;
 
     public LightingPage()
     {
@@ -72,14 +83,17 @@ public partial class LightingPage : PageBase
     public override void Reload()
     {
         Loading = true;
-        if (!RamSvc.Available && _target == Target.Ram) _target = Target.Mouse;
+        if (!RamSvc.Available && _target == Target.Ram || !GpuSvc.Available && _target == Target.Gpu) _target = Target.Mouse;
         ModeTogether.IsChecked = _target == Target.Together;
         ModeSeparate.IsChecked = _target != Target.Together;
         TargetMouse.IsChecked = _target == Target.Mouse;
         TargetRam.IsChecked = _target == Target.Ram;
+        TargetGpu.IsChecked = _target == Target.Gpu;
         var separate = _target != Target.Together;
-        TargetDivider.Visibility = TargetMouse.Visibility = TargetRam.Visibility = separate ? Visibility.Visible : Visibility.Collapsed;
+        TargetDivider.Visibility = TargetMouse.Visibility = TargetRam.Visibility = TargetGpu.Visibility =
+            separate ? Visibility.Visible : Visibility.Collapsed;
         TargetRam.IsEnabled = RamSvc.Available;
+        TargetGpu.IsEnabled = GpuSvc.Available;
 
         BuildDevices();
         BuildEffects();
@@ -108,17 +122,33 @@ public partial class LightingPage : PageBase
         var k => k,
     };
 
+    static string GpuKey(GpuEffect e) => e switch
+    {
+        GpuEffect.Off => "off",
+        GpuEffect.Pulse => "breath",
+        GpuEffect.Flash => "flash",
+        GpuEffect.DoubleFlash => "dflash",
+        GpuEffect.Cycle => "spectrum",
+        _ => "static",
+    };
+
     (string Key, string C1, string C2, int Brightness) Current() => _target switch
     {
         Target.Ram => (RamKey(R.Effect), R.Color1, R.Color2, R.Brightness),
+        Target.Gpu => (GpuKey(G.Effect), G.Color, G.Color, G.Brightness),
         // Juntos: manda el mouse; si tenia un efecto que no es comun, se muestra estatico.
         Target.Together => (TogetherFx.Any(f => f.Key == MouseKey(P.Effect)) ? MouseKey(P.Effect) : "static", P.Color1, P.Color2, P.Brightness),
         _ => (MouseKey(P.Effect), P.Color1, P.Color2, P.Brightness),
     };
 
-    Fx[] Available => _target switch { Target.Ram => RamFx, Target.Mouse => MouseFx, _ => TogetherFx };
+    Fx[] Available => _target switch { Target.Ram => RamFx, Target.Mouse => MouseFx, Target.Gpu => GpuFx, _ => TogetherFx };
 
-    bool TwoColorBreath => _target == Target.Ram ? R.TwoColors : P.Effect == LightingEffect.BreathingDual;
+    bool TwoColorBreath => _target switch
+    {
+        Target.Ram => R.TwoColors,
+        Target.Gpu => false,
+        _ => P.Effect == LightingEffect.BreathingDual,
+    };
 
     // ---------- Escritura ----------
 
@@ -127,6 +157,7 @@ public partial class LightingPage : PageBase
         if (Loading) return;
         var toMouse = _target is Target.Mouse or Target.Together;
         var toRam = (_target is Target.Ram or Target.Together) && RamSvc.Available;
+        var toGpu = (_target is Target.Gpu or Target.Together) && GpuSvc.Available;
         var currentKey = key ?? Current().Key;
         var variant = breathVariant ?? (TwoColorBreath ? "two" : P.Effect == LightingEffect.BreathingRandom ? "random" : "one");
 
@@ -167,6 +198,22 @@ public partial class LightingPage : PageBase
             if (brightness is not null) R.Brightness = brightness.Value;
             if (speed is not null && _target != Target.Mouse) R.Speed = speed.Value;
         }
+        if (toGpu)
+        {
+            G.Effect = currentKey switch
+            {
+                "off" => GpuEffect.Off,
+                "static" => GpuEffect.Static,
+                "breath" => GpuEffect.Pulse,
+                "spectrum" => GpuEffect.Cycle,
+                "flash" => GpuEffect.Flash,
+                "dflash" => GpuEffect.DoubleFlash,
+                _ => G.Effect,
+            };
+            if (c1 is not null) G.Color = c1;
+            if (brightness is not null) G.Brightness = brightness.Value;
+            if (speed is not null && _target != Target.Mouse) G.Speed = speed.Value;
+        }
 
         UpdateView();
         Commit(async () =>
@@ -174,6 +221,7 @@ public partial class LightingPage : PageBase
             var tasks = new List<Task>();
             if (toMouse) tasks.Add(Device.ApplyLightingAsync());
             if (toRam) tasks.Add(RamSvc.ApplyAsync());
+            if (toGpu) tasks.Add(GpuSvc.ApplyAsync());
             await Task.WhenAll(tasks);
         });
     }
@@ -199,10 +247,15 @@ public partial class LightingPage : PageBase
         }
         EffectsHint.Text = _target switch
         {
-            Target.Together => RamSvc.Available
-                ? "Solo los efectos que tienen el mouse y la RAM. Para el resto, usa Por separado."
-                : "La RAM no está disponible: por ahora se aplica solo al mouse.",
+            Target.Together => (RamSvc.Available, GpuSvc.Available) switch
+            {
+                (true, true) => "Solo los efectos que tienen el mouse, la RAM y la gráfica. Para el resto, usa Por separado.",
+                (true, false) => "Solo los efectos que tienen el mouse y la RAM. Para el resto, usa Por separado.",
+                (false, true) => "Solo los efectos que tienen el mouse y la gráfica. Para el resto, usa Por separado.",
+                _ => "La RAM y la gráfica no están disponibles: por ahora se aplica solo al mouse.",
+            },
             Target.Ram => "Se aplica a todos los módulos a la vez, sincronizados.",
+            Target.Gpu => "Franja RGB Fusion de la gráfica. Se guarda en la tarjeta unos segundos después del último cambio.",
             _ => "Logo Chroma del Razer Cobra.",
         };
     }
@@ -223,10 +276,8 @@ public partial class LightingPage : PageBase
         }
         Devices.Children.Add(ram);
 
-        var gpu = Chip("", "Gigabyte RX 9060 XT", "No disponible", "Ink300");
-        gpu.ToolTip = "El driver actual de AMD rechaza los comandos de luz de la gráfica. Gigabyte Control Center tampoco puede: " +
-                      "sus registros muestran el mismo error (GvWriteI2C fail). Se puede volver a probar tras actualizar el driver.";
-        gpu.Opacity = 0.7;
+        var gpu = Chip("", "Gráfica Gigabyte", GpuSvc.Status, GpuSvc.Available ? "Ok" : "Ink300");
+        if (!GpuSvc.Available) gpu.Opacity = 0.7;
         Devices.Children.Add(gpu);
     }
 
@@ -338,12 +389,16 @@ public partial class LightingPage : PageBase
         if (Loading) return;
         Settings.LightingTogether = ModeTogether.IsChecked == true;
         App.Current.SaveSoon();
-        _target = Settings.LightingTogether ? Target.Together : TargetRam.IsChecked == true && RamSvc.Available ? Target.Ram : Target.Mouse;
-        if (Settings.LightingTogether && RamSvc.Available)
+        _target = Settings.LightingTogether ? Target.Together
+            : TargetRam.IsChecked == true && RamSvc.Available ? Target.Ram
+            : TargetGpu.IsChecked == true && GpuSvc.Available ? Target.Gpu
+            : Target.Mouse;
+        if (Settings.LightingTogether)
         {
-            // Al volver a "juntos", la RAM se iguala al mouse en el acto.
-            Settings.SyncRamToMouse();
-            _ = RamSvc.ApplyAsync();
+            // Al volver a "juntos", la RAM y la grafica se igualan al mouse en el acto.
+            Settings.SyncToMouse();
+            if (RamSvc.Available) _ = RamSvc.ApplyAsync();
+            if (GpuSvc.Available) _ = GpuSvc.ApplyAsync();
         }
         Reload();
     }
@@ -351,7 +406,7 @@ public partial class LightingPage : PageBase
     void Target_Checked(object sender, RoutedEventArgs e)
     {
         if (Loading) return;
-        _target = sender == TargetRam ? Target.Ram : Target.Mouse;
+        _target = sender == TargetRam ? Target.Ram : sender == TargetGpu ? Target.Gpu : Target.Mouse;
         Reload();
     }
 
@@ -376,7 +431,7 @@ public partial class LightingPage : PageBase
         Loading = true;
 
         // Respiracion: el aleatorio solo lo tiene el mouse.
-        BreathPanel.Visibility = key == "breath" ? Visibility.Visible : Visibility.Collapsed;
+        BreathPanel.Visibility = key == "breath" && _target != Target.Gpu ? Visibility.Visible : Visibility.Collapsed;
         BrRandom.Visibility = _target == Target.Mouse ? Visibility.Visible : Visibility.Collapsed;
         var two = TwoColorBreath;
         BrOne.IsChecked = !two && !(P.Effect == LightingEffect.BreathingRandom && _target == Target.Mouse);
@@ -384,8 +439,8 @@ public partial class LightingPage : PageBase
         BrRandom.IsChecked = _target == Target.Mouse && P.Effect == LightingEffect.BreathingRandom;
         var random = BrRandom.IsChecked == true;
 
-        // Velocidad: en el mouse solo existe la duracion del reactivo; en juntos, la de la RAM.
-        var showSpeed = fx.Speed && (_target != Target.Together || RamSvc.Available) && !(key == "breath" && _target == Target.Mouse);
+        // Velocidad: en el mouse solo existe la duracion del reactivo; en juntos, la de RAM y grafica.
+        var showSpeed = fx.Speed && (_target != Target.Together || RamSvc.Available || GpuSvc.Available) && !(key == "breath" && _target == Target.Mouse);
         SpeedPanel.Visibility = showSpeed ? Visibility.Visible : Visibility.Collapsed;
         if (_target == Target.Mouse)
         {
@@ -397,11 +452,17 @@ public partial class LightingPage : PageBase
         }
         else
         {
-            SpeedLabel.Text = _target == Target.Together ? "VELOCIDAD DE LA RAM" : "VELOCIDAD";
+            SpeedLabel.Text = _target != Target.Together ? "VELOCIDAD"
+                : (RamSvc.Available, GpuSvc.Available) switch
+                {
+                    (true, true) => "VELOCIDAD DE LA RAM Y LA GRÁFICA",
+                    (false, true) => "VELOCIDAD DE LA GRÁFICA",
+                    _ => "VELOCIDAD DE LA RAM",
+                };
             SpeedMin.Text = "Lenta";
             SpeedMax.Text = "Rápida";
             Speed.Maximum = 5;
-            Speed.Value = R.Speed;
+            Speed.Value = _target == Target.Gpu || _target == Target.Together && !RamSvc.Available ? G.Speed : R.Speed;
         }
 
         var colors = random ? 0 : key == "breath" && two ? 2 : fx.Colors;
@@ -420,15 +481,19 @@ public partial class LightingPage : PageBase
         Loading = wasLoading;
 
         // Vista previa
-        MouseBox.Visibility = _target == Target.Ram ? Visibility.Collapsed : Visibility.Visible;
-        RamBox.Visibility = _target == Target.Mouse || !RamSvc.Available ? Visibility.Collapsed : Visibility.Visible;
-        MouseBox.Height = _target == Target.Together && RamSvc.Available ? 250 : 320;
-        RamBox.Height = _target == Target.Together ? 180 : 260;
+        var together = _target == Target.Together;
+        MouseBox.Visibility = _target is Target.Mouse or Target.Together ? Visibility.Visible : Visibility.Collapsed;
+        RamBox.Visibility = (_target == Target.Ram || together) && RamSvc.Available ? Visibility.Visible : Visibility.Collapsed;
+        GpuBox.Visibility = (_target == Target.Gpu || together) && GpuSvc.Available ? Visibility.Visible : Visibility.Collapsed;
+        var withGpu = together && GpuSvc.Available;
+        MouseBox.Height = !together ? 320 : withGpu ? 210 : RamSvc.Available ? 250 : 320;
+        RamBox.Height = together ? (withGpu ? 150 : 180) : 260;
         var col1 = ColorPicker.Parse(c1);
         var col2 = ColorPicker.Parse(c2);
         if (MouseBox.Visibility == Visibility.Visible) Preview.ShowEffect(P.Effect, col1, col2, P.Brightness);
         if (RamBox.Visibility == Visibility.Visible)
-            RamPreview.ShowEffect(key == "breath" && two ? "dynamic" : key, col1, col2, _target == Target.Mouse ? P.Brightness : R.Brightness);
+            RamPreview.ShowEffect(key == "breath" && two ? "dynamic" : key, col1, col2, R.Brightness);
+        if (GpuBox.Visibility == Visibility.Visible) GpuPreview.ShowEffect(key, col1, G.Brightness);
         PreviewLabel.Text = fx.Label.ToUpperInvariant();
     }
 }

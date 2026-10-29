@@ -45,6 +45,15 @@ public sealed class RamProfile
     public bool UsePalette { get; set; }
 }
 
+public sealed class GpuProfile
+{
+    public Gpu.GpuEffect Effect { get; set; } = Gpu.GpuEffect.Cycle;
+    public string Color { get; set; } = "#D7264F";
+    public int Brightness { get; set; } = 80;
+    /// <summary>1 lento ... 5 rapido.</summary>
+    public int Speed { get; set; } = 3;
+}
+
 public sealed class AppSettings
 {
     public string Theme { get; set; } = "sistema";
@@ -53,17 +62,30 @@ public sealed class AppSettings
     public DeviceProfile Device { get; set; } = new();
     public List<Macro> Macros { get; set; } = [];
     public RamProfile Ram { get; set; } = new();
+    public GpuProfile Gpu { get; set; } = new();
     /// <summary>Iluminacion de todos los dispositivos junta (solo efectos que tienen todos).</summary>
     public bool LightingTogether { get; set; } = true;
     /// <summary>Esquema de cursores de Windows que habia antes del primer cambio, para poder volver.</summary>
     public string? OriginalCursorScheme { get; set; }
 
     /// <summary>
-    /// En "todos juntos" manda el mouse: la RAM copia su efecto, colores y brillo. Lo que
-    /// no existe en la RAM (reactivo) queda en estatico.
+    /// En "todos juntos" manda el mouse: la RAM y la grafica copian su efecto, colores y
+    /// brillo. Lo que no existe en ellas (reactivo) queda en estatico; la grafica solo
+    /// tiene un color, el primero.
     /// </summary>
-    public void SyncRamToMouse()
+    public void SyncToMouse()
     {
+        Gpu.Effect = Device.Effect switch
+        {
+            LightingEffect.Off => Core.Gpu.GpuEffect.Off,
+            LightingEffect.Spectrum => Core.Gpu.GpuEffect.Cycle,
+            LightingEffect.Breathing or LightingEffect.BreathingDual or LightingEffect.BreathingRandom => Core.Gpu.GpuEffect.Pulse,
+            _ => Core.Gpu.GpuEffect.Static,
+        };
+        Gpu.Color = Device.Color1;
+        Gpu.Brightness = Device.Brightness;
+        Gpu.Speed = Ram.Speed;
+
         Ram.Effect = Device.Effect switch
         {
             LightingEffect.Off => Core.Ram.RamEffect.Off,
