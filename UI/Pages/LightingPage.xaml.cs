@@ -53,7 +53,17 @@ public partial class LightingPage : PageBase
     public LightingPage()
     {
         InitializeComponent();
-        Color1.ColorChanged += hex => Write(c1: hex);
+        Color1.ColorChanged += hex =>
+        {
+            // Con paleta, el selector edita el color elegido de la paleta.
+            if (PaletteActive)
+            {
+                R.Palette[_paletteIndex] = hex;
+                BuildPalette();
+                Write();
+            }
+            else Write(c1: hex);
+        };
         Color2.ColorChanged += hex => Write(c2: hex);
         _target = Settings.LightingTogether ? Target.Together : Target.Mouse;
         Reload();
@@ -249,6 +259,78 @@ public partial class LightingPage : PageBase
         };
     }
 
+    // ---------- Paleta de la RAM ----------
+
+    int _paletteIndex;
+
+    bool PaletteSupported => _target == Target.Ram && Current().Key is "breath" or "dynamic" or "comet";
+    bool PaletteActive => PaletteSupported && R.UsePalette;
+
+    void BuildPalette()
+    {
+        PaletteChips.Children.Clear();
+        if (R.Palette.Count == 0) R.Palette.Add(R.Color1);
+        _paletteIndex = Math.Clamp(_paletteIndex, 0, R.Palette.Count - 1);
+        for (var i = 0; i < R.Palette.Count; i++)
+        {
+            var index = i;
+            var selected = i == _paletteIndex;
+            var chip = new Border
+            {
+                Width = 34,
+                Height = 34,
+                CornerRadius = new CornerRadius(17),
+                Margin = new Thickness(0, 0, 8, 8),
+                Background = new SolidColorBrush(ColorPicker.Parse(R.Palette[i])),
+                BorderBrush = selected ? Res("Accent500") : new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)),
+                BorderThickness = new Thickness(selected ? 3 : 1),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                ToolTip = $"Color {i + 1}",
+            };
+            chip.MouseLeftButtonUp += (_, _) =>
+            {
+                _paletteIndex = index;
+                Loading = true;
+                Color1.Set(R.Palette[index]);
+                Loading = false;
+                BuildPalette();
+            };
+            PaletteChips.Children.Add(chip);
+        }
+        var add = new Button { Style = (Style)FindResource("IconButton"), Content = "", ToolTip = "Agregar color", IsEnabled = R.Palette.Count < 10 };
+        add.Click += (_, _) =>
+        {
+            R.Palette.Add(R.Palette[_paletteIndex]);
+            _paletteIndex = R.Palette.Count - 1;
+            BuildPalette();
+            Write();
+        };
+        var remove = new Button { Style = (Style)FindResource("IconButton"), Content = "", ToolTip = "Quitar el color elegido", IsEnabled = R.Palette.Count > 1 };
+        remove.Click += (_, _) =>
+        {
+            R.Palette.RemoveAt(_paletteIndex);
+            _paletteIndex = Math.Max(0, _paletteIndex - 1);
+            Loading = true;
+            Color1.Set(R.Palette[_paletteIndex]);
+            Loading = false;
+            BuildPalette();
+            Write();
+        };
+        PaletteChips.Children.Add(add);
+        PaletteChips.Children.Add(remove);
+    }
+
+    void UsePalette_Changed(object sender, RoutedEventArgs e)
+    {
+        if (Loading) return;
+        R.UsePalette = UsePalette.IsChecked == true;
+        _paletteIndex = 0;
+        Loading = true;
+        Color1.Set(R.UsePalette ? R.Palette[0] : R.Color1);
+        Loading = false;
+        Write();
+    }
+
     // ---------- Eventos ----------
 
     void Mode_Checked(object sender, RoutedEventArgs e)
@@ -324,7 +406,17 @@ public partial class LightingPage : PageBase
 
         var colors = random ? 0 : key == "breath" && two ? 2 : fx.Colors;
         ColorCard.Visibility = colors > 0 ? Visibility.Visible : Visibility.Collapsed;
-        Color2Panel.Visibility = colors > 1 ? Visibility.Visible : Visibility.Collapsed;
+        Color2Panel.Visibility = colors > 1 && !PaletteActive ? Visibility.Visible : Visibility.Collapsed;
+        PalettePanel.Visibility = PaletteSupported ? Visibility.Visible : Visibility.Collapsed;
+        UsePalette.IsChecked = R.UsePalette;
+        PaletteChips.Visibility = PaletteActive ? Visibility.Visible : Visibility.Collapsed;
+        // Con paleta, la respiracion de dos colores no aplica: manda la paleta.
+        if (PaletteActive)
+        {
+            BreathPanel.Visibility = Visibility.Collapsed;
+            BuildPalette();
+            Color1.Set(R.Palette[Math.Clamp(_paletteIndex, 0, R.Palette.Count - 1)]);
+        }
         Loading = wasLoading;
 
         // Vista previa

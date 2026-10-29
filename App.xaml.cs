@@ -46,6 +46,14 @@ public partial class App : Application
         };
         AppDomain.CurrentDomain.UnhandledException += (_, a) => LogError(a.ExceptionObject as Exception);
 
+        if (e.Args.Contains("--desinstalar"))
+        {
+            // Lo llama el desinstalador (elevado): quita las tareas programadas y la clave Run.
+            SystemIntegration.RemoveStartup();
+            Shutdown();
+            return;
+        }
+
         _single = new Mutex(true, MutexName, out var first);
         if (!first && e.Args.Contains("--relanzado"))
         {
@@ -73,12 +81,12 @@ public partial class App : Application
 
         // Sin elevar y con la tarea creada: se relanza por la tarea (elevada, sin UAC) para
         // que PawnIO acepte el acceso a la RAM.
-        if (!SystemIntegration.IsElevated && !e.Args.Contains("--bandeja") && SystemIntegration.HasStartupTask)
+        if (!SystemIntegration.IsElevated && SystemIntegration.HasStartupTask)
         {
             _single.ReleaseMutex();
             _single.Dispose();
             _single = null;
-            if (SystemIntegration.RunStartupTask())
+            if (SystemIntegration.RunStartupTask(tray: e.Args.Contains("--bandeja")))
             {
                 Shutdown();
                 return;
@@ -92,6 +100,12 @@ public partial class App : Application
         }) { IsBackground = true, Name = "mostrar" }.Start();
 
         Settings = AppSettings.Load();
+        if (e.Args.Contains("--sin-inicio"))
+        {
+            // El instalador desmarco "Iniciar con Windows".
+            Settings.StartWithWindows = false;
+            Settings.Save();
+        }
         ApplyTheme();
         SystemEvents.UserPreferenceChanged += (_, a) =>
         {
@@ -106,6 +120,7 @@ public partial class App : Application
         _tray = new TrayIcon("Colmillo");
         _tray.Click += ShowWindow;
         _tray.RightClick += ShowTrayMenu;
+        _tray.CloseRequested += Quit;
         // Al enchufar algo USB llegan varios avisos seguidos: se espera a que se calme.
         _tray.DevicesChanged += () => { _recheckTimer.Stop(); _recheckTimer.Start(); };
         _tray.Resumed += () => _ = Device.ConnectAndApplyAsync();
@@ -126,6 +141,15 @@ public partial class App : Application
         }));
 
         if (!e.Args.Contains("--bandeja")) ShowWindow();
+    }
+
+    /// <summary>Corre el instalador de una actualizacion ya verificada y cierra Colmillo.</summary>
+    public void InstallUpdate(string setupPath)
+    {
+        // /VERYSILENT sin preguntas; el instalador vuelve a abrir Colmillo al terminar.
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(setupPath,
+            "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ACTUALIZACION=1") { UseShellExecute = true })?.Dispose();
+        Quit();
     }
 
     static void LogError(Exception? ex)

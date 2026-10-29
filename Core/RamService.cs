@@ -48,7 +48,9 @@ public sealed class RamService : IDisposable
             }
             if (_ram is null) return;
             var p = _settings.Ram;
-            _ram.Apply(p.Effect, Rgb.Parse(p.Color1), Rgb.Parse(p.Color2), p.Brightness, p.Speed, p.TwoColors);
+            // La paleta solo aplica por separado: en "todos juntos" la RAM copia al mouse.
+            var palette = p.UsePalette && !_settings.LightingTogether ? p.Palette.Select(Rgb.Parse).ToArray() : null;
+            _ram.Apply(p.Effect, Rgb.Parse(p.Color1), Rgb.Parse(p.Color2), p.Brightness, p.Speed, p.TwoColors, palette);
         }
         finally
         {

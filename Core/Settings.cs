@@ -39,6 +39,10 @@ public sealed class RamProfile
     public int Speed { get; set; } = 3;
     /// <summary>Respiracion alternando entre dos colores.</summary>
     public bool TwoColors { get; set; }
+    /// <summary>Paleta propia (1-10 colores) para respiracion, dinamico y cometa por separado.</summary>
+    public List<string> Palette { get; set; } = ["#D7264F", "#F5E6C8", "#3D5AFE"];
+    /// <summary>Usar la paleta en vez de color 1 / color 2.</summary>
+    public bool UsePalette { get; set; }
 }
 
 public sealed class AppSettings

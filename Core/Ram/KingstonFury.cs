@@ -84,11 +84,13 @@ public sealed class KingstonFury
 
     /// <summary>Aplica un efecto a todos los modulos a la vez, sincronizados.</summary>
     /// <param name="speed">1 lento ... 5 rapido.</param>
-    public void Apply(RamEffect effect, Rgb c1, Rgb c2, int brightness, int speed, bool twoColors)
+    /// <param name="palette">Si viene, reemplaza a c1/c2 en respiracion, dinamico y cometa (hasta 10).</param>
+    public void Apply(RamEffect effect, Rgb c1, Rgb c2, int brightness, int speed, bool twoColors, Rgb[]? palette = null)
     {
         speed = Math.Clamp(speed, 1, 5) - 1;
         c1 = c1.ToLed();
         c2 = c2.ToLed();
+        var list = palette is { Length: > 0 } ? palette.Take(10).Select(c => c.ToLed()).ToArray() : null;
         if (effect == RamEffect.Off)
         {
             effect = RamEffect.Static;
@@ -133,7 +135,8 @@ public sealed class KingstonFury
             case RamEffect.Breathing:
                 All(RegDirection, BottomToTop);
                 All(RegDelay, 0);
-                if (twoColors) Colors(c1, c2);
+                if (list is not null) Colors(list);
+                else if (twoColors) Colors(c1, c2);
                 else Colors(c1);
                 All(RegSpeed, 0);
                 // Tiempos de fundido entre niveles de brillo, los mismos que usa Kingston.
@@ -151,7 +154,7 @@ public sealed class KingstonFury
             case RamEffect.Dynamic:
                 All(RegDirection, BottomToTop);
                 All(RegDelay, 0);
-                Colors(c1, c2);
+                Colors(list ?? [c1, c2]);
                 All(RegSpeed, 0);
                 var ms = new[] { 800, 500, 300, 200, 100 }[speed];
                 All(RegDynamicHoldA, (byte)(ms >> 8));
@@ -164,7 +167,7 @@ public sealed class KingstonFury
                 All(RegDirection, BottomToTop);
                 All(RegDelay, 0);
                 All(RegLength, 7);
-                Colors(c1);
+                Colors(list ?? [c1]);
                 All(RegSpeed, (byte)new[] { 60, 40, 25, 12, 4 }[speed]);
                 break;
 

@@ -79,6 +79,15 @@
                 <Border Style="{StaticResource Card}" Margin="0,18,0,0" x:Name="ColorCard">
                     <StackPanel>
                         <TextBlock Style="{StaticResource H2}" Text="Color" Margin="0,0,0,14" />
+                        <StackPanel x:Name="PalettePanel" Margin="0,0,0,16">
+                            <CheckBox Style="{StaticResource Switch}" x:Name="UsePalette" Checked="UsePalette_Changed" Unchecked="UsePalette_Changed">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Body}" Text="Paleta propia" />
+                                    <TextBlock Style="{StaticResource Sub}" FontSize="12" Text="Hasta 10 colores que la RAM recorre en orden. Elige uno para cambiarlo." />
+                                </StackPanel>
+                            </CheckBox>
+                            <WrapPanel x:Name="PaletteChips" Margin="0,12,0,0" />
+                        </StackPanel>
                         <c:ColorPicker x:Name="Color1" />
                         <StackPanel x:Name="Color2Panel" Margin="0,18,0,0">
                             <TextBlock Style="{StaticResource Label}" Text="SEGUNDO COLOR" />

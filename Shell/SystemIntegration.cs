@@ -95,8 +95,21 @@ public static class SystemIntegration
         finally { File.Delete(file); }
     }
 
-    /// <summary>Arranca la copia elevada por la tarea de abrir (con ventana, sin UAC).</summary>
-    public static bool RunStartupTask() => Schtasks($"/Run /TN \"{OpenTaskName}\"") == 0;
+    /// <summary>Desinstalacion: quita las dos tareas y la clave Run.</summary>
+    public static void RemoveStartup()
+    {
+        using (var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true))
+            key?.DeleteValue(RunName, throwOnMissingValue: false);
+        Schtasks($"/Delete /TN \"{TaskName}\" /F");
+        Schtasks($"/Delete /TN \"{OpenTaskName}\" /F");
+    }
+
+    /// <summary>
+    /// Arranca la copia elevada por una tarea, sin UAC. <paramref name="tray"/>: la de inicio
+    /// (sin ventana) si existe; si no, la de abrir.
+    /// </summary>
+    public static bool RunStartupTask(bool tray = false) =>
+        (tray && Schtasks($"/Run /TN \"{TaskName}\"") == 0) || Schtasks($"/Run /TN \"{OpenTaskName}\"") == 0;
 
     /// <summary>Relanza esta app como administrador (aviso UAC). False si el usuario dijo que no.</summary>
     public static bool StartElevated()

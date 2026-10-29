@@ -1,21 +1,22 @@
 # Colmillo
 
 Reemplazo liviano de Razer Synapse para el **Razer Cobra** (USB, PID 0x00A3).
-Sin cuentas, sin telemetria, sin codigo de red. C# + WPF sobre .NET 9.
+Sin cuentas ni telemetria. C# + WPF sobre .NET 9.
 
 | | Synapse 4 | Colmillo |
 |---|---|---|
 | Procesos | 9 de RazerAppEngine + servicios | 1 |
-| RAM en bandeja | ~470 MB | ~9 MB |
+| RAM en bandeja | ~470 MB | ~25 MB |
 | RAM con la ventana abierta | | ~145 MB (se libera al cerrarla) |
-| Red | si | no |
+| Red | siempre | solo al apretar "Buscar actualizaciones" (GitHub) |
 
 ## Que hace
 
 - **Rendimiento**: hasta 5 etapas de DPI (200-8500, paso 100) y sondeo 125/500/1000 Hz.
 - **Iluminacion**: mouse y RAM, todos juntos (apagado, estatico, respiracion, espectro)
   o por separado. Mouse: ademas reactivo y respiracion aleatoria. RAM Kingston FURY RGB:
-  ademas arcoiris, dinamico, cometa, llama y crepusculo. La grafica Gigabyte RX 9060 XT
+  ademas arcoiris, dinamico, cometa, llama y crepusculo, con una paleta propia de hasta 10
+  colores para respiracion, dinamico y cometa. La grafica Gigabyte RX 9060 XT
   aparece como no disponible: el driver actual de AMD bloquea su I2C (ver PROTOCOLO.md).
 - **Botones**: capa normal y Hypershift. Teclas/atajos, multimedia, DPI, doble clic y
   turbo se graban en el mouse. Macros y "abrir programa" corren en Colmillo.
@@ -28,24 +29,27 @@ Al apretar el boton de DPI aparece un aviso abajo a la derecha y la app se actua
 
 ## Instalar y actualizar
 
-En PowerShell (tambien en un Windows recien instalado):
+Baja **`Colmillo-Setup.exe`** de [Releases](https://github.com/MesshM/Colmillo-/releases/latest)
+y ejecutalo. Instala por usuario en `%LOCALAPPDATA%\Programs\Colmillo` (sin administrador),
+crea el acceso directo del menu Inicio, se registra en "Aplicaciones instaladas" y ofrece:
 
-```
-irm https://github.com/MesshM/Colmillo-/releases/latest/download/instalar.ps1 -OutFile $env:TEMP\instalar-colmillo.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\instalar-colmillo.ps1 -ConRam
-```
+- **Iniciar con Windows** (en la bandeja).
+- **Controlar la luz de la RAM**: instala **PawnIO** (driver firmado y de codigo abierto).
+  PawnIO solo atiende a programas con privilegios de administrador, asi que al terminar
+  Colmillo se abre elevado (un UAC) y crea dos tareas programadas: una al iniciar sesion
+  y otra que usa el acceso directo para abrirlo elevado **sin** UAC.
 
-Baja la ultima version de [Releases](https://github.com/MesshM/Colmillo-/releases),
-instala el runtime de .NET 9 si falta, copia Colmillo a `%LOCALAPPDATA%\Programs\Colmillo`
-y lo deja arrancando con Windows. **Para actualizar, se corre lo mismo**: los ajustes
-(`%APPDATA%\Colmillo`) no se tocan. Colmillo no busca actualizaciones solo; en
-Ajustes hay un boton que abre la pagina de versiones en el navegador.
+**Actualizar**: Ajustes > "Buscar actualizaciones". Es el unico momento en que Colmillo
+se conecta a internet, y solo a la API de GitHub. Si hay una version nueva, baja el
+instalador, verifica su SHA-256 contra el publicado y se instala en silencio; Colmillo
+se vuelve a abrir solo. Los ajustes (`%APPDATA%\Colmillo`) no se tocan, ni al desinstalar.
 
-`-ConRam` instala **PawnIO** (driver firmado y de codigo abierto) para la luz de la RAM.
-PawnIO solo atiende a programas con privilegios de administrador, asi que la primera vez
-Colmillo pide un UAC ("Activar" en Iluminacion) y crea dos tareas programadas: una al
-iniciar sesion y otra que usa el acceso directo para abrirlo elevado **sin** UAC.
+Requiere el runtime de escritorio de .NET 9.
 
-`-BloquearSynapse` (pide administrador) evita que Windows Update instale el driver de
+### Script (opcional)
+
+`scripts\instalar.ps1` sigue disponible para instalar sin el asistente; `-ConRam` instala
+PawnIO y `-BloquearSynapse` (pide administrador) evita que Windows Update instale el driver de
 Razer que abre el instalador de Synapse al conectar el mouse; conviene correrlo
 **antes** de conectarlo. Contra: Windows deja de bajar drivers solo para cualquier
 dispositivo. Si ya desactivas la instalacion automatica de drivers al formatear, no
@@ -90,6 +94,10 @@ El protocolo, y de donde se saco, esta en [PROTOCOLO.md](PROTOCOLO.md).
 - **WPF y no WebView/Electron**: sin Chromium no hay telemetria de navegador ni
   ~100 MB de procesos extra. Al cerrar la ventana se destruye y se recorta la memoria.
 - **Bandeja sin WinForms**: `NotifyIcon` cargaria todo WinForms; se usa `Shell_NotifyIcon`.
+- **Cierre por mensaje registrado**: el instalador corre sin elevar y no puede cerrar a
+  Colmillo elevado. Le manda por difusion `Colmillo.Cerrar`, que la ventana de la bandeja
+  acepta con `ChangeWindowMessageFilterEx`. Un vigilante de archivos no funciono: el
+  proceso lanzado por el Programador de tareas no recibia los eventos.
 - **Dos tareas y no una con una marca**: la copia que lanza el Programador de tareas no
   veia un valor de HKCU escrito por la copia sin elevar. Una tarea sin disparador para
   "abrir con ventana" evita pasar estado entre procesos.

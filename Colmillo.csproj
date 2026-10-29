@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Colmillo</AssemblyName>
     <RootNamespace>Colmillo</RootNamespace>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\colmillo.ico</ApplicationIcon>
 

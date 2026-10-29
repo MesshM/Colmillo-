@@ -55,7 +55,7 @@
             <StackPanel>
                 <TextBlock Style="{StaticResource H2}" Text="Privacidad" Margin="0,0,0,8" />
                 <TextBlock Style="{StaticResource Sub}"
-                           Text="Colmillo no tiene ningún código de red: no hay cuentas, ni telemetría, ni actualizaciones automáticas, ni nada que salga de esta PC. Los ajustes viven en %APPDATA%\Colmillo\ajustes.json." />
+                           Text="Sin cuentas ni telemetría. Colmillo solo se conecta a internet cuando aprietas &quot;Buscar actualizaciones&quot;, y solo a GitHub: no envía nada de esta PC. Los ajustes viven en %APPDATA%\Colmillo\ajustes.json." />
                 <Button Style="{StaticResource Outline}" Content="Abrir carpeta de ajustes" HorizontalAlignment="Left" Margin="0,14,0,0" Click="OpenFolder_Click" />
             </StackPanel>
         </Border>
@@ -64,12 +64,14 @@
             <DockPanel>
                 <Image DockPanel.Dock="Left" Source="/Assets/isotipo.png" Height="44" Margin="0,0,16,0" VerticalAlignment="Center"
                        RenderOptions.BitmapScalingMode="HighQuality" />
-                <Button DockPanel.Dock="Right" Style="{StaticResource Outline}" Content="Buscar actualizaciones" Click="Updates_Click"
-                        VerticalAlignment="Center" />
+                <Button DockPanel.Dock="Right" x:Name="CheckButton" Style="{StaticResource Outline}" Content="Buscar actualizaciones" Click="Updates_Click"
+                        VerticalAlignment="Top" />
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock x:Name="VersionText" Style="{StaticResource H2}" />
-                    <TextBlock Style="{StaticResource Sub}" FontSize="12"
-                               Text="Abre la página de versiones en el navegador. Para actualizar, vuelve a correr el instalador." />
+                    <TextBlock x:Name="UpdateText" Style="{StaticResource Sub}" FontSize="12"
+                               Text="Solo se conecta a GitHub cuando tú lo pides." />
+                    <Button x:Name="InstallButton" Style="{StaticResource Cta}" HorizontalAlignment="Left" Margin="0,10,0,0"
+                            Visibility="Collapsed" Click="Install_Click" />
                 </StackPanel>
             </DockPanel>
         </Border>

@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-    Compila Colmillo y publica un release en GitHub con Colmillo.exe e instalar.ps1.
+    Compila Colmillo y su instalador y publica un release en GitHub con Colmillo-Setup.exe
+    (y su .sha256), Colmillo.exe e instalar.ps1.
 .DESCRIPTION
     La version sale de <Version> en Colmillo.csproj; el tag es "v<version>". Usa la
     credencial de GitHub que Git ya guardo (Git Credential Manager): no pide token.
@@ -21,6 +22,14 @@ Write-Host "Publicando Colmillo $tag"
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=none -o publish
 if ($LASTEXITCODE -ne 0) { throw 'La compilacion fallo' }
+
+# Instalador (Inno Setup 6) y su SHA-256, que Colmillo verifica antes de actualizarse.
+$iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $iscc) { throw 'Falta Inno Setup 6 (winget install JRSoftware.InnoSetup)' }
+& $iscc /Q "/DAppVersion=$version" installer\Colmillo.iss
+if ($LASTEXITCODE -ne 0) { throw 'El instalador no compilo' }
+$setup = "$raiz\publish\setup\Colmillo-Setup.exe"
+"$((Get-FileHash $setup -Algorithm SHA256).Hash.ToLower())  Colmillo-Setup.exe" | Set-Content "$setup.sha256" -Encoding ascii
 
 # 2. Subir commits y tag
 if (git status --porcelain) { throw 'Hay cambios sin commit: hacer commit antes de publicar.' }
@@ -49,7 +58,8 @@ try {
 }
 
 # 5. Subir archivos (los nombres fijos permiten el enlace .../releases/latest/download/<archivo>)
-foreach ($archivo in @("$raiz\publish\Colmillo.exe", "$raiz\scripts\instalar.ps1")) {
+# Colmillo.exe e instalar.ps1 siguen subiendo por compatibilidad con el instalador por script.
+foreach ($archivo in @($setup, "$setup.sha256", "$raiz\publish\Colmillo.exe", "$raiz\scripts\instalar.ps1")) {
     $nombre = Split-Path $archivo -Leaf
     $viejo = $rel.assets | Where-Object { $_.name -eq $nombre }
     if ($viejo) { Invoke-RestMethod "https://api.github.com/repos/$repo/releases/assets/$($viejo.id)" -Method Delete -Headers $h | Out-Null }

@@ -77,6 +77,12 @@ public sealed class TrayIcon : IDisposable
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     static extern IntPtr GetModuleHandle(string? name);
 
+    [DllImport("user32.dll")]
+    static extern bool ChangeWindowMessageFilterEx(IntPtr hwnd, int message, int action, IntPtr filterStatus);
+
+    readonly int _closeRequest;
+    public event Action? CloseRequested;
+
     readonly HwndSource _window;
     readonly IntPtr _icon;
     readonly IntPtr _devNotify;
@@ -127,6 +133,13 @@ public sealed class TrayIcon : IDisposable
         // Si explorer.exe se reinicia, la bandeja se vacia y hay que volver a agregarse.
         _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
 
+        // El instalador y el desinstalador corren sin elevar y piden el cierre con este
+        // mensaje. Colmillo puede correr elevado (por la RAM) y UIPI bloquea los mensajes
+        // que suben de nivel de integridad salvo los que la ventana acepta a proposito.
+        _closeRequest = RegisterWindowMessage("Colmillo.Cerrar");
+        ChangeWindowMessageFilterEx(_window.Handle, _closeRequest, 1, IntPtr.Zero); // MSGFLT_ALLOW
+        ChangeWindowMessageFilterEx(_window.Handle, _taskbarCreated, 1, IntPtr.Zero);
+
         // Avisos de interfaces HID (llegan al enchufar o quitar cualquier HID).
         var filter = new DEV_BROADCAST_DEVICEINTERFACE
         {
@@ -163,6 +176,10 @@ public sealed class TrayIcon : IDisposable
         else if (msg == WM_POWERBROADCAST && (int)wParam == PBT_APMRESUMEAUTOMATIC)
         {
             Resumed?.Invoke();
+        }
+        else if (msg == _closeRequest)
+        {
+            CloseRequested?.Invoke();
         }
         else if (msg == _taskbarCreated)
         {

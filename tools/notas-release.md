@@ -1,22 +1,17 @@
-Reemplazo liviano de Razer Synapse para el **Razer Cobra**, ahora también con la luz de la **RAM Kingston FURY RGB**. Sin cuentas, sin telemetría, sin código de red.
+Reemplazo liviano de Razer Synapse para el **Razer Cobra** y la **RAM Kingston FURY RGB**. Sin cuentas ni telemetría.
 
-### Instalar o actualizar
+### Instalar
 
-En PowerShell:
-
-```
-irm https://github.com/MesshM/Colmillo-/releases/latest/download/instalar.ps1 -OutFile $env:TEMP\instalar-colmillo.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\instalar-colmillo.ps1 -ConRam
-```
-
-- `-ConRam` instala PawnIO (driver firmado y de código abierto) para controlar la RAM.
-- `-BloquearSynapse` evita que Windows instale Synapse solo al conectar el mouse.
+Baja **Colmillo-Setup.exe** y ejecútalo. Ofrece iniciar con Windows y controlar la luz de la RAM (instala PawnIO). Requiere el runtime de escritorio de .NET 9.
 
 ### Novedades
 
-- **RAM Kingston FURY Beast DDR4 RGB**: estático, respiración (1 o 2 colores), espectro, arcoíris, dinámico, cometa, llama y crepúsculo, con brillo y velocidad.
-- **Iluminación "Todos juntos" o "Por separado"**: en grupo solo los efectos que tienen el mouse y la RAM (apagado, estático, respiración, espectro).
-- Vista previa animada de la RAM y estado de cada dispositivo.
-- La primera vez Colmillo pide administrador (lo exige PawnIO) y crea una tarea de inicio: desde ahí arranca elevado sin preguntar.
-- La gráfica Gigabyte RX 9060 XT aparece como **no disponible**: el driver actual de AMD bloquea su control de luz (Gigabyte Control Center tampoco puede).
+- **Instalador** (Inno Setup): menú Inicio, "Aplicaciones instaladas" con desinstalador, inicio con Windows opcional e instalación de PawnIO opcional.
+- **Actualizaciones desde Ajustes**: "Buscar actualizaciones" consulta GitHub solo cuando lo pides, verifica el SHA-256 del instalador y se actualiza sola.
+- **Paleta propia para la RAM**: hasta 10 colores para respiración, dinámico y cometa.
+- El instalador y el desinstalador cierran Colmillo aunque corra como administrador.
 
-Requiere el runtime de escritorio de .NET 9 (el instalador lo instala si falta).
+### Sobre el mouse y la gráfica
+
+- El firmware del Cobra no tiene velocidad en respiración ni espectro (Synapse tampoco la ofrece) y no acepta cuadros enviados desde el PC; el detalle está en PROTOCOLO.md.
+- La gráfica Gigabyte RX 9060 XT sigue no disponible con el driver actual de AMD.

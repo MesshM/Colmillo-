@@ -94,6 +94,18 @@ byte 2-5 DPI X (H, L) e Y (H, L)
 Verificado apretando el boton de DPI en modo normal:
 `05-02-03-20-03-20` (800), `05-02-06-40-06-40` (1600), `05-02-0C-80-0C-80` (3200).
 
+## Efectos personalizados en el Cobra (no disponibles)
+
+Synapse no da velocidad para los efectos del Cobra: su interfaz solo expone, por efecto,
+`Breathing {color1, color2, isRandom}`, `Reactive {color1, duration}` y `Spectrum` sin
+parametros. Los efectos de Chroma Studio son cuadros enviados desde el PC:
+`0F:03 [perfil 0, region, fila, inicio, fin, RGB...]` y despues `0F:02 [0, region, 8]`
+(efecto "cuadro personalizado"). En este Cobra eso apaga el LED y no muestra color, probado
+con region 0 y 4, modo normal y driver, perfil 0 y 1, `0F:10` (Force Chroma Ctrl) y
+brillo del perfil 0. Tampoco se ve un estatico en el perfil 0: el LED solo muestra el
+perfil activo (1), que se guarda en la memoria del mouse, y animarlo escribiendo ahi 20
+veces por segundo podria desgastarla. Por eso Colmillo no anima el mouse por software.
+
 ## Color de los LED
 
 Synapse no corrige el color en su codigo. Los LED son lineales y un color de pantalla

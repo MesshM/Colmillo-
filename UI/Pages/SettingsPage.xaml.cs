@@ -95,12 +95,55 @@ public partial class SettingsPage : PageBase
         BuildInfo();
     }
 
-    /// <summary>
-    /// Colmillo no se conecta a internet por su cuenta: solo abre la pagina de
-    /// versiones en el navegador si el usuario lo pide.
-    /// </summary>
-    void Updates_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo("https://github.com/MesshM/Colmillo-/releases/latest") { UseShellExecute = true })?.Dispose();
+    UpdateInfo? _update;
+
+    /// <summary>Unico momento en que Colmillo se conecta a internet: cuando el usuario lo pide.</summary>
+    async void Updates_Click(object sender, RoutedEventArgs e)
+    {
+        CheckButton.IsEnabled = false;
+        InstallButton.Visibility = Visibility.Collapsed;
+        UpdateText.Text = "Buscando en GitHub...";
+        try
+        {
+            _update = await Updater.CheckAsync();
+            if (_update is null)
+            {
+                UpdateText.Text = "Ya tienes la última versión.";
+            }
+            else
+            {
+                UpdateText.Text = $"Hay una versión nueva: {_update.Tag}. Se descarga, se verifica y se instala sola.";
+                InstallButton.Content = $"Instalar {_update.Tag}";
+                InstallButton.Visibility = Visibility.Visible;
+            }
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            UpdateText.Text = "No se pudo consultar GitHub. Revisa la conexión e intenta de nuevo.";
+        }
+        finally
+        {
+            CheckButton.IsEnabled = true;
+        }
+    }
+
+    async void Install_Click(object sender, RoutedEventArgs e)
+    {
+        if (_update is null) return;
+        InstallButton.IsEnabled = CheckButton.IsEnabled = false;
+        try
+        {
+            var progress = new Progress<double>(p => UpdateText.Text = $"Descargando {_update.Tag}... {(int)(p * 100)} %");
+            var setup = await Updater.DownloadAsync(_update, progress);
+            UpdateText.Text = "Instalando... Colmillo se vuelve a abrir solo.";
+            App.Current.InstallUpdate(setup);
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or InvalidDataException or IOException)
+        {
+            UpdateText.Text = ex is InvalidDataException ? ex.Message : "No se pudo descargar la actualización. Intenta de nuevo.";
+            InstallButton.IsEnabled = CheckButton.IsEnabled = true;
+        }
+    }
 
     void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
