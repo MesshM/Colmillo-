@@ -6,8 +6,10 @@
     La version sale de <Version> en Colmillo.csproj; el tag es "v<version>". Usa la
     credencial de GitHub que Git ya guardo (Git Credential Manager): no pide token.
     Para una version nueva: subir <Version>, hacer commit y correr este script.
+    Correr con PowerShell 7 (pwsh): en Windows PowerShell 5.1, "git credential fill"
+    responde "missing protocol field" y no hay token.
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File tools\publicar-release.ps1
+    pwsh -ExecutionPolicy Bypass -File tools\publicar-release.ps1
 #>
 $ErrorActionPreference = 'Stop'
 $raiz = Split-Path $PSScriptRoot -Parent
@@ -38,9 +40,7 @@ if (-not (git tag -l $tag)) { git tag -a $tag -m "Colmillo $version" }
 git push origin $tag
 
 # 3. Credencial guardada por Git (la misma que usa git push)
-# Sin BOM: PowerShell 5.1 lo antepone al texto que manda a git y git no ve "protocol".
-$OutputEncoding = New-Object Text.UTF8Encoding $false
-$cred = 'protocol=https', 'host=github.com', '' | git credential fill
+$cred = "protocol=https`nhost=github.com`n`n" | git credential fill
 $token = ($cred | Where-Object { $_ -like 'password=*' }) -replace '^password=', ''
 if (-not $token) { throw 'No hay credencial de GitHub guardada. Hacer un git push primero.' }
 $h = @{ Authorization = "token $token"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'colmillo-release' }
