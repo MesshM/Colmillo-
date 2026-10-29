@@ -1,0 +1,134 @@
+<local:PageBase x:Class="Colmillo.UI.Pages.PointerPage"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:local="clr-namespace:Colmillo.UI.Pages">
+    <StackPanel MaxWidth="1000" HorizontalAlignment="Left">
+        <TextBlock Style="{StaticResource H1}" Text="Puntero de Windows" />
+        <TextBlock Style="{StaticResource Sub}" Margin="0,4,0,22"
+                   Text="Ajustes del sistema para cualquier mouse. Son los mismos que el Panel de control, juntos en un solo lugar." />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Movimiento" Margin="0,0,0,14" />
+
+                        <Grid>
+                            <TextBlock Style="{StaticResource Body}" Text="Velocidad del puntero" />
+                            <TextBlock x:Name="SpeedValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                        </Grid>
+                        <Slider x:Name="Speed" Minimum="1" Maximum="20" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Speed_Changed" Margin="0,6,0,4" />
+                        <TextBlock Style="{StaticResource Sub}" FontSize="12" Text="10 es sin escala: un conteo del sensor = un píxel. Para cambiar la sensibilidad mejor usa el DPI." />
+
+                        <CheckBox Style="{StaticResource Switch}" x:Name="Precision" Margin="0,16,0,0" Checked="Toggle_Changed" Unchecked="Toggle_Changed">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Body}" Text="Mejorar precisión del puntero" />
+                                <TextBlock Style="{StaticResource Sub}" FontSize="12" Text="Aceleración de Windows. En juegos suele convenir apagarla." />
+                            </StackPanel>
+                        </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" x:Name="Swap" Margin="0,14,0,0" Checked="Toggle_Changed" Unchecked="Toggle_Changed">
+                            <TextBlock Style="{StaticResource Body}" Text="Intercambiar botón izquierdo y derecho" />
+                        </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" x:Name="Snap" Margin="0,14,0,0" Checked="Toggle_Changed" Unchecked="Toggle_Changed">
+                            <TextBlock Style="{StaticResource Body}" Text="Mover al botón predeterminado de los diálogos" />
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Rueda" Margin="0,0,0,14" />
+                        <Grid>
+                            <TextBlock Style="{StaticResource Body}" Text="Líneas por muesca" />
+                            <TextBlock x:Name="LinesValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                        </Grid>
+                        <Slider x:Name="Lines" Minimum="1" Maximum="20" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Lines_Changed" Margin="0,6,0,0" />
+                        <CheckBox Style="{StaticResource Switch}" x:Name="PageScroll" Margin="0,10,0,0" Checked="Toggle_Changed" Unchecked="Toggle_Changed">
+                            <TextBlock Style="{StaticResource Body}" Text="Una pantalla por muesca" />
+                        </CheckBox>
+                        <Grid Margin="0,16,0,0">
+                            <TextBlock Style="{StaticResource Body}" Text="Caracteres en desplazamiento horizontal" />
+                            <TextBlock x:Name="CharsValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                        </Grid>
+                        <Slider x:Name="Chars" Minimum="1" Maximum="20" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Chars_Changed" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Doble clic" Margin="0,0,0,14" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Style="{StaticResource Body}" Text="Tiempo máximo entre clics" />
+                                    <TextBlock x:Name="DoubleValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                                </Grid>
+                                <Slider x:Name="DoubleSlider" Minimum="200" Maximum="900" IsSnapToTickEnabled="True" TickFrequency="10" ValueChanged="Double_Changed" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <Border Grid.Column="1" x:Name="DoubleTest" Width="64" Height="64" Margin="18,0,0,0" CornerRadius="{StaticResource RadiusBox}"
+                                    Background="{DynamicResource Fog}" Cursor="Hand" MouseLeftButtonDown="DoubleTest_Down" ToolTip="Haz doble clic acá para probar">
+                                <TextBlock x:Name="DoubleIcon" Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="26" Foreground="{DynamicResource Ink400}" />
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Visibilidad" Margin="0,0,0,14" />
+                        <Grid>
+                            <TextBlock Style="{StaticResource Body}" Text="Tamaño del puntero" />
+                            <TextBlock x:Name="SizeValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                        </Grid>
+                        <Slider x:Name="SizeSlider" Minimum="1" Maximum="15" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Size_Changed" Margin="0,6,0,0" />
+                        <Grid Margin="0,14,0,0">
+                            <TextBlock Style="{StaticResource Body}" Text="Estela del puntero" />
+                            <TextBlock x:Name="TrailsValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                        </Grid>
+                        <Slider x:Name="Trails" Minimum="1" Maximum="7" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Trails_Changed" Margin="0,6,0,0" />
+                        <CheckBox Style="{StaticResource Switch}" x:Name="Sonar" Margin="0,14,0,0" Checked="Toggle_Changed" Unchecked="Toggle_Changed">
+                            <TextBlock Style="{StaticResource Body}" Text="Mostrar dónde está el puntero al apretar Ctrl" />
+                        </CheckBox>
+                        <CheckBox Style="{StaticResource Switch}" x:Name="Vanish" Margin="0,14,0,0" Checked="Toggle_Changed" Unchecked="Toggle_Changed">
+                            <TextBlock Style="{StaticResource Body}" Text="Ocultar el puntero mientras escribo" />
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Diseño del cursor" />
+                        <TextBlock Style="{StaticResource Sub}" Margin="0,3,0,14" Text="Esquemas instalados en Windows. Haz clic en uno para usarlo." />
+                        <WrapPanel x:Name="Schemes" />
+                        <WrapPanel Margin="0,8,0,0">
+                            <Button Style="{StaticResource Outline}" Content="Volver al que tenia" Click="RestoreOriginal_Click" x:Name="RestoreButton" Margin="0,0,8,8" />
+                            <Button Style="{StaticResource Outline}" Content="Predeterminado de Windows" Click="Default_Click" Margin="0,0,8,8" />
+                            <Button Style="{StaticResource Outline}" Content="Personalizar..." Click="Customize_Click" Margin="0,0,8,8" />
+                        </WrapPanel>
+
+                        <StackPanel x:Name="CustomPanel" Visibility="Collapsed" Margin="0,12,0,0">
+                            <TextBlock Style="{StaticResource Label}" Text="ARCHIVO POR CADA FORMA (.cur o .ani)" />
+                            <StackPanel x:Name="Roles" />
+                            <DockPanel Margin="0,12,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Cta}" Content="Guardar y usar" Click="SaveCustom_Click" Margin="8,0,0,0" />
+                                <TextBox x:Name="CustomName" Text="Mi esquema" />
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </StackPanel>
+</local:PageBase>

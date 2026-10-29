@@ -1,0 +1,43 @@
+<Window x:Class="Colmillo.UI.DpiToast"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" ShowInTaskbar="False" ShowActivated="False" Topmost="True"
+        SizeToContent="WidthAndHeight" FontFamily="{StaticResource Sans}" UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display">
+    <!-- Margen para que la sombra no se corte en los bordes de la ventana transparente. -->
+    <Border x:Name="Card" Margin="18" Width="268" Padding="16,14" CornerRadius="{StaticResource RadiusPanel}"
+            Background="{DynamicResource GlassStrong}" BorderBrush="{DynamicResource Line}" BorderThickness="1"
+            Opacity="0" RenderTransformOrigin="0.5,1">
+        <Border.RenderTransform>
+            <TranslateTransform x:Name="Slide" Y="14" />
+        </Border.RenderTransform>
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="6" Direction="270" Color="#000000" Opacity="0.28" />
+        </Border.Effect>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid Width="46" Height="46" VerticalAlignment="Center">
+                <Ellipse Fill="{DynamicResource AccentSoft}" />
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE962;" FontSize="20" Foreground="{DynamicResource Accent600}" />
+            </Grid>
+            <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="SENSIBILIDAD" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource Ink400}" />
+                <StackPanel Orientation="Horizontal" Margin="0,1,0,0">
+                    <TextBlock x:Name="Value" FontFamily="{StaticResource Display}" FontSize="28" FontWeight="Bold"
+                               Foreground="{DynamicResource Wordmark}" />
+                    <TextBlock Text="DPI" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource Ink500}"
+                               VerticalAlignment="Bottom" Margin="6,0,0,6" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <StackPanel x:Name="Dots" Orientation="Horizontal" VerticalAlignment="Center" />
+                    <TextBlock x:Name="StageText" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Ink500}"
+                               Margin="8,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

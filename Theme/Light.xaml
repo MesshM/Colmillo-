@@ -1,0 +1,96 @@
+<!-- Tema claro: crema + carmesi, los mismos tokens de GenI (styles/index.css)
+     pasados de oklch a sRGB. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Color x:Key="BgColor">#FBFAF5</Color>
+    <SolidColorBrush x:Key="Bg" Color="#FBFAF5" />
+    <SolidColorBrush x:Key="Warm100" Color="#F7F3E8" />
+    <SolidColorBrush x:Key="Warm200" Color="#F0EAD9" />
+
+    <!-- Lienzo "bloom": halo carmesi arriba a la derecha y crema abajo a la izquierda. -->
+    <DrawingBrush x:Key="Canvas" Stretch="Fill">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="M0,0 H1 V1 H0 Z">
+                    <GeometryDrawing.Brush>
+                        <LinearGradientBrush StartPoint="0.1,0" EndPoint="0.9,1">
+                            <GradientStop Offset="0" Color="#F7F3E8" />
+                            <GradientStop Offset="0.55" Color="#F9F1EE" />
+                            <GradientStop Offset="1" Color="#F0EAD9" />
+                        </LinearGradientBrush>
+                    </GeometryDrawing.Brush>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M0,0 H1 V1 H0 Z">
+                    <GeometryDrawing.Brush>
+                        <RadialGradientBrush Center="0.88,-0.08" GradientOrigin="0.88,-0.08" RadiusX="0.6" RadiusY="0.45">
+                            <GradientStop Offset="0" Color="#4DE8798A" />
+                            <GradientStop Offset="1" Color="#00E8798A" />
+                        </RadialGradientBrush>
+                    </GeometryDrawing.Brush>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M0,0 H1 V1 H0 Z">
+                    <GeometryDrawing.Brush>
+                        <RadialGradientBrush Center="-0.06,1.08" GradientOrigin="-0.06,1.08" RadiusX="0.5" RadiusY="0.4">
+                            <GradientStop Offset="0" Color="#8CF3E6C6" />
+                            <GradientStop Offset="1" Color="#00F3E6C6" />
+                        </RadialGradientBrush>
+                    </GeometryDrawing.Brush>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <!-- Tinta: gris apenas tirando al tono de la marca. -->
+    <SolidColorBrush x:Key="Ink900" Color="#3A2A2B" />
+    <SolidColorBrush x:Key="Ink800" Color="#4A3A3B" />
+    <SolidColorBrush x:Key="Ink700" Color="#5A4949" />
+    <SolidColorBrush x:Key="Ink600" Color="#6E5E5E" />
+    <SolidColorBrush x:Key="Ink500" Color="#837474" />
+    <SolidColorBrush x:Key="Ink400" Color="#A09292" />
+    <SolidColorBrush x:Key="Ink300" Color="#BCB0B0" />
+
+    <!-- "Lo activo": carmesi. -->
+    <Color x:Key="AccentColor">#AE1E3C</Color>
+    <SolidColorBrush x:Key="Accent700" Color="#93132F" />
+    <SolidColorBrush x:Key="Accent600" Color="#AE1E3C" />
+    <SolidColorBrush x:Key="Accent500" Color="#C1394D" />
+    <SolidColorBrush x:Key="AccentSoft" Color="#29E06A74" />
+    <SolidColorBrush x:Key="OnCta" Color="#FFFFFF" />
+    <LinearGradientBrush x:Key="CtaFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="#AE1E3C" />
+        <GradientStop Offset="1" Color="#C11F45" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Wordmark" StartPoint="0,0" EndPoint="1,0.4">
+        <GradientStop Offset="0" Color="#AE1E3C" />
+        <GradientStop Offset="1" Color="#D9636C" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="Line" Color="#DDD2D1" />
+    <SolidColorBrush x:Key="Track" Color="#DCD3D3" />
+    <SolidColorBrush x:Key="Fog" Color="#40C9BDBD" />
+
+    <!-- Vidrio: blanco translucido con canto brillante. -->
+    <LinearGradientBrush x:Key="Glass" StartPoint="0,0" EndPoint="0.4,1">
+        <GradientStop Offset="0" Color="#C7FFFFFF" />
+        <GradientStop Offset="1" Color="#85FFFFFF" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GlassStrong" StartPoint="0,0" EndPoint="0.4,1">
+        <GradientStop Offset="0" Color="#E6FFFFFF" />
+        <GradientStop Offset="1" Color="#B3FFFFFF" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="GlassBorder" Color="#D9FFFFFF" />
+    <SolidColorBrush x:Key="PillActive" Color="#D9FFFFFF" />
+    <SolidColorBrush x:Key="PillHover" Color="#80FFFFFF" />
+    <SolidColorBrush x:Key="Field" Color="#E6FFFFFF" />
+    <Color x:Key="ShadowColor">#581620</Color>
+    <sys:Double x:Key="ShadowOpacity" xmlns:sys="clr-namespace:System;assembly=mscorlib">0.16</sys:Double>
+
+    <!-- Estados. El peligro va al bermellon para no confundirse con el carmesi. -->
+    <SolidColorBrush x:Key="Danger" Color="#C9502B" />
+    <SolidColorBrush x:Key="DangerBg" Color="#F7E4DC" />
+    <SolidColorBrush x:Key="Ok" Color="#3FAE7E" />
+    <SolidColorBrush x:Key="OkBg" Color="#DDF1E6" />
+    <SolidColorBrush x:Key="Warn" Color="#9A6A12" />
+    <SolidColorBrush x:Key="WarnBg" Color="#F6E9CC" />
+</ResourceDictionary>

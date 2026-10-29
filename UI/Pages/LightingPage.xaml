@@ -1,0 +1,88 @@
+<local:PageBase x:Class="Colmillo.UI.Pages.LightingPage"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:local="clr-namespace:Colmillo.UI.Pages"
+                xmlns:c="clr-namespace:Colmillo.UI.Controls">
+    <StackPanel MaxWidth="980" HorizontalAlignment="Left">
+        <TextBlock Style="{StaticResource H1}" Text="Iluminación" />
+        <TextBlock Style="{StaticResource Sub}" Margin="0,4,0,22"
+                   Text="Efecto del logo Chroma. Lo ejecuta el propio mouse, sin que Colmillo tenga que estar abierto." />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Vista previa -->
+            <Border Style="{StaticResource Card}" Margin="0,0,18,0" Padding="20,26" VerticalAlignment="Top">
+                <StackPanel>
+                    <Border Height="340">
+                        <c:MouseDrawing x:Name="Preview" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock x:Name="PreviewLabel" Style="{StaticResource Label}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Column="1">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Efecto" Margin="0,0,0,14" />
+                        <WrapPanel x:Name="Effects">
+                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE7E8;" Content="Apagado" x:Name="FxOff" Checked="Effect_Checked" />
+                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE790;" Content="Estático" x:Name="FxStatic" Checked="Effect_Checked" />
+                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE9D9;" Content="Respiración" x:Name="FxBreath" Checked="Effect_Checked" />
+                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE706;" Content="Espectro" x:Name="FxSpectrum" Checked="Effect_Checked" />
+                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE8B0;" Content="Reactivo" x:Name="FxReactive" Checked="Effect_Checked" />
+                        </WrapPanel>
+
+                        <StackPanel x:Name="BreathPanel" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource Label}" Text="COLORES DE LA RESPIRACIÓN" />
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" GroupName="br" Content="Un color" x:Name="BrOne" Checked="Breath_Checked" />
+                                <RadioButton Style="{StaticResource Segment}" GroupName="br" Content="Dos colores" x:Name="BrTwo" Checked="Breath_Checked" />
+                                <RadioButton Style="{StaticResource Segment}" GroupName="br" Content="Aleatorio" x:Name="BrRandom" Checked="Breath_Checked" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel x:Name="SpeedPanel" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource Label}" Text="DURACIÓN DEL BRILLO AL HACER CLIC" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Sub}" Text="Corta" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <Slider Grid.Column="1" x:Name="Speed" Minimum="1" Maximum="4" IsSnapToTickEnabled="True" TickFrequency="1"
+                                        ValueChanged="Speed_Changed" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource Sub}" Text="Larga" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,18,0,0" x:Name="ColorCard">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Color" Margin="0,0,0,14" />
+                        <c:ColorPicker x:Name="Color1" />
+                        <StackPanel x:Name="Color2Panel" Margin="0,18,0,0">
+                            <TextBlock Style="{StaticResource Label}" Text="SEGUNDO COLOR" />
+                            <c:ColorPicker x:Name="Color2" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Style="{StaticResource H2}" Text="Brillo" />
+                            <TextBlock x:Name="BrightnessValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                        </Grid>
+                        <Slider x:Name="Brightness" Minimum="0" Maximum="100" Margin="0,12,0,0" ValueChanged="Brightness_Changed" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </StackPanel>
+</local:PageBase>

@@ -1,0 +1,55 @@
+<local:PageBase x:Class="Colmillo.UI.Pages.PerformancePage"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:local="clr-namespace:Colmillo.UI.Pages">
+    <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+        <TextBlock Style="{StaticResource H1}" Text="Rendimiento" />
+        <TextBlock Style="{StaticResource Sub}" Margin="0,4,0,22"
+                   Text="Sensibilidad y frecuencia de sondeo. Se guardan en la memoria del mouse: siguen funcionando aunque Colmillo esté cerrado." />
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Etapas de DPI" />
+                        <TextBlock Style="{StaticResource Sub}" Margin="0,3,0,0"
+                                   Text="El botón de abajo del mouse recorre estas etapas. Haz clic en una para activarla." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                        <TextBlock x:Name="BigDpi" FontFamily="{StaticResource Display}" FontSize="46" FontWeight="Bold"
+                                   Foreground="{DynamicResource Wordmark}" HorizontalAlignment="Right" Margin="0,-8,0,0" />
+                        <TextBlock x:Name="BigDpiLabel" Style="{StaticResource Label}" HorizontalAlignment="Right" Margin="0,-4,2,0" />
+                    </StackPanel>
+                </Grid>
+
+                <WrapPanel x:Name="Chips" Margin="0,18,0,6" />
+
+                <StackPanel x:Name="Rows" Margin="0,12,0,0" />
+
+                <Button x:Name="AddStage" Style="{StaticResource Outline}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="AddStage_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" />
+                        <TextBlock Text="Agregar etapa" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+            <StackPanel>
+                <TextBlock Style="{StaticResource H2}" Text="Frecuencia de sondeo" />
+                <TextBlock Style="{StaticResource Sub}" Margin="0,3,0,14"
+                           Text="Cuántas veces por segundo el mouse le informa su posición a la PC. 1000 Hz es lo más fluido; 500 Hz gasta algo menos de CPU." />
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Style="{StaticResource Segment}" GroupName="poll" Content="125 Hz" Tag="125" Checked="Poll_Checked" x:Name="Poll125" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="poll" Content="500 Hz" Tag="500" Checked="Poll_Checked" x:Name="Poll500" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="poll" Content="1000 Hz" Tag="1000" Checked="Poll_Checked" x:Name="Poll1000" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</local:PageBase>
