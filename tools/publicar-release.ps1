@@ -40,9 +40,10 @@ try {
     $rel = Invoke-RestMethod "https://api.github.com/repos/$repo/releases/tags/$tag" -Headers $h
     Write-Host "El release $tag ya existia; se reemplazan sus archivos."
 } catch {
-    # -Encoding UTF8: PowerShell 5.1 lee por defecto en ANSI y romperia las tildes.
-    $notas = Get-Content (Join-Path $PSScriptRoot 'notas-release.md') -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
-    if (-not $notas) { $notas = "Colmillo $version" }
+    # ReadAllText y no Get-Content: en PowerShell 5.1 Get-Content lee en ANSI (rompe las
+    # tildes) y su texto lleva PSPath & co., que ConvertTo-Json manda como objeto.
+    $archivoNotas = Join-Path $PSScriptRoot 'notas-release.md'
+    $notas = if (Test-Path $archivoNotas) { [IO.File]::ReadAllText($archivoNotas, [Text.Encoding]::UTF8) } else { "Colmillo $version" }
     $body = @{ tag_name = $tag; name = "Colmillo $version"; body = $notas; draft = $false; prerelease = $false } | ConvertTo-Json
     $rel = Invoke-RestMethod "https://api.github.com/repos/$repo/releases" -Method Post -Headers $h -Body ([Text.Encoding]::UTF8.GetBytes($body)) -ContentType 'application/json; charset=utf-8'
 }
