@@ -38,7 +38,8 @@ if (-not (git tag -l $tag)) { git tag -a $tag -m "Colmillo $version" }
 git push origin $tag
 
 # 3. Credencial guardada por Git (la misma que usa git push)
-$cred = "protocol=https`nhost=github.com`n`n" | git credential fill
+# Lineas sueltas y no un texto con `n: PowerShell 5.1 le antepone basura y git no ve "protocol".
+$cred = 'protocol=https', 'host=github.com', '' | git credential fill
 $token = ($cred | Where-Object { $_ -like 'password=*' }) -replace '^password=', ''
 if (-not $token) { throw 'No hay credencial de GitHub guardada. Hacer un git push primero.' }
 $h = @{ Authorization = "token $token"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'colmillo-release' }
