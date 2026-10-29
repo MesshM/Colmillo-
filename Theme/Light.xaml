@@ -66,6 +66,10 @@
         <GradientStop Offset="1" Color="#D9636C" />
     </LinearGradientBrush>
 
+    <!-- Logo: el imagotipo trae el texto en carmesi oscuro, que solo se lee sobre crema. -->
+    <Visibility x:Key="ImagotipoVisibility">Visible</Visibility>
+    <Visibility x:Key="WordmarkVisibility">Collapsed</Visibility>
+
     <SolidColorBrush x:Key="Line" Color="#DDD2D1" />
     <SolidColorBrush x:Key="Track" Color="#DCD3D3" />
     <SolidColorBrush x:Key="Fog" Color="#40C9BDBD" />

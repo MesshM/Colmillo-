@@ -23,17 +23,33 @@ Sin cuentas, sin telemetria, sin codigo de red. C# + WPF sobre .NET 9.
 DPI, luz y botones quedan en la memoria del mouse: funcionan aunque Colmillo no corra.
 Al apretar el boton de DPI aparece un aviso abajo a la derecha y la app se actualiza.
 
-## Instalar (tambien despues de reinstalar Windows)
+## Instalar y actualizar
+
+En PowerShell (tambien en un Windows recien instalado):
 
 ```
-powershell -ExecutionPolicy Bypass -File scripts\instalar.ps1 -BloquearSynapse
+irm https://github.com/MesshM/Colmillo-/releases/latest/download/instalar.ps1 -OutFile $env:TEMP\instalar-colmillo.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\instalar-colmillo.ps1 -BloquearSynapse
 ```
 
-Instala el runtime de .NET 9 si falta, copia Colmillo a `%LOCALAPPDATA%\Programs\Colmillo`
-y lo deja arrancando con Windows. `-BloquearSynapse` (pide administrador) evita que
-Windows Update instale el driver de Razer que abre el instalador de Synapse al
-conectar el mouse; conviene correrlo **antes** de conectarlo. Contra: Windows deja de
-bajar drivers solo para cualquier dispositivo. Detalle en [PROTOCOLO.md](PROTOCOLO.md).
+Baja la ultima version de [Releases](https://github.com/MesshM/Colmillo-/releases),
+instala el runtime de .NET 9 si falta, copia Colmillo a `%LOCALAPPDATA%\Programs\Colmillo`
+y lo deja arrancando con Windows. **Para actualizar, se corre lo mismo**: los ajustes
+(`%APPDATA%\Colmillo`) no se tocan. Colmillo no busca actualizaciones solo; en
+Ajustes hay un boton que abre la pagina de versiones en el navegador.
+
+`-BloquearSynapse` (pide administrador) evita que Windows Update instale el driver de
+Razer que abre el instalador de Synapse al conectar el mouse; conviene correrlo
+**antes** de conectarlo. Contra: Windows deja de bajar drivers solo para cualquier
+dispositivo. Si ya desactivas la instalacion automatica de drivers al formatear, no
+hace falta.
+
+### Por que no se modifica el driver de Razer
+
+El paquete de Razer esta firmado por Microsoft; cambiar una linea del `.inf` (por
+ejemplo, quitar el co-instalador) invalida la firma del catalogo y Windows de 64 bits
+se niega a instalarlo. Tampoco deberia hacer falta: Colmillo habla con el mouse con la
+API HID estandar de Windows (`hid.dll`), que no depende de ningun driver de Razer.
+Pendiente de confirmar en un equipo que nunca tuvo los drivers de Razer.
 
 ## Compilar
 
@@ -43,8 +59,9 @@ Requiere el .NET 9 SDK.
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=none -o publish
 ```
 
-Sale `publish\Colmillo.exe` (~360 KB; usa el runtime de escritorio de .NET 9).
-`--bandeja` arranca sin ventana. El icono se regenera con `node tools/make-icon.js`.
+Sale `publish\Colmillo.exe` (~1 MB; usa el runtime de escritorio de .NET 9).
+`--bandeja` arranca sin ventana. Icono, isotipo e imagotipo se regeneran desde los
+PNG de la marca con `pwsh tools/assets.ps1 -Origen <carpeta>`.
 
 ## Como esta armado
 

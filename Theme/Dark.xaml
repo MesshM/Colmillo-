@@ -63,6 +63,10 @@
         <GradientStop Offset="1" Color="#D8C9A4" />
     </LinearGradientBrush>
 
+    <!-- Sobre grafito el texto carmesi del imagotipo no se lee: isotipo + texto crema. -->
+    <Visibility x:Key="ImagotipoVisibility">Collapsed</Visibility>
+    <Visibility x:Key="WordmarkVisibility">Visible</Visibility>
+
     <SolidColorBrush x:Key="Line" Color="#3A3B41" />
     <SolidColorBrush x:Key="Track" Color="#3A3B41" />
     <SolidColorBrush x:Key="Fog" Color="#40585A60" />

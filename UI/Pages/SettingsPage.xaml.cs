@@ -23,6 +23,8 @@ public partial class SettingsPage : PageBase
         ThemeDark.IsChecked = Settings.Theme == "oscuro";
         Startup.IsChecked = Settings.StartWithWindows;
         Tray.IsChecked = Settings.CloseToTray;
+        var v = typeof(App).Assembly.GetName().Version;
+        VersionText.Text = $"Colmillo {v?.Major}.{v?.Minor}.{v?.Build}";
         BuildInfo();
         Loading = false;
     }
@@ -92,6 +94,13 @@ public partial class SettingsPage : PageBase
         await Device.ConnectAndApplyAsync();
         BuildInfo();
     }
+
+    /// <summary>
+    /// Colmillo no se conecta a internet por su cuenta: solo abre la pagina de
+    /// versiones en el navegador si el usuario lo pide.
+    /// </summary>
+    void Updates_Click(object sender, RoutedEventArgs e) =>
+        Process.Start(new ProcessStartInfo("https://github.com/MesshM/Colmillo-/releases/latest") { UseShellExecute = true })?.Dispose();
 
     void OpenFolder_Click(object sender, RoutedEventArgs e)
     {

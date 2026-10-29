@@ -22,12 +22,15 @@
         </Grid.ColumnDefinitions>
 
         <!-- Logo arriba del sidebar, dentro de la franja arrastrable -->
-        <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Margin="22,18,0,0" Orientation="Horizontal"
-                    VerticalAlignment="Top" IsHitTestVisible="False">
-            <Image Source="/Assets/colmillo.ico" Width="34" Height="34" RenderOptions.BitmapScalingMode="HighQuality" />
-            <TextBlock Text="Colmillo" Margin="11,0,0,1" VerticalAlignment="Center" FontFamily="{StaticResource Display}"
-                       FontSize="21" FontWeight="Bold" Foreground="{DynamicResource Wordmark}" />
-        </StackPanel>
+        <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Margin="22,16,0,0" VerticalAlignment="Top" IsHitTestVisible="False">
+            <Image Source="/Assets/imagotipo.png" Height="40" HorizontalAlignment="Left"
+                   RenderOptions.BitmapScalingMode="HighQuality" Visibility="{DynamicResource ImagotipoVisibility}" />
+            <StackPanel Orientation="Horizontal" Visibility="{DynamicResource WordmarkVisibility}">
+                <Image Source="/Assets/isotipo.png" Height="40" RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock Text="Colmillo" Margin="10,0,0,2" VerticalAlignment="Center" FontFamily="{StaticResource Display}"
+                           FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Wordmark}" />
+            </StackPanel>
+        </Grid>
 
         <!-- Botones de ventana -->
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">

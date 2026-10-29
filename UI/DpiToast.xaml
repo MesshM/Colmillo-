@@ -20,10 +20,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Grid Width="46" Height="46" VerticalAlignment="Center">
-                <Ellipse Fill="{DynamicResource AccentSoft}" />
-                <TextBlock Style="{StaticResource Icon}" Text="&#xE962;" FontSize="20" Foreground="{DynamicResource Accent600}" />
-            </Grid>
+            <Image Source="/Assets/isotipo.png" Height="42" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
             <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
                 <TextBlock Text="SENSIBILIDAD" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource Ink400}" />
                 <StackPanel Orientation="Horizontal" Margin="0,1,0,0">

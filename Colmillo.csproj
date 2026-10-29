@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Colmillo</AssemblyName>
     <RootNamespace>Colmillo</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\colmillo.ico</ApplicationIcon>
 
@@ -30,6 +30,8 @@
 
   <ItemGroup>
     <Resource Include="Assets\colmillo.ico" />
+    <Resource Include="Assets\isotipo.png" />
+    <Resource Include="Assets\imagotipo.png" />
   </ItemGroup>
 
 </Project>

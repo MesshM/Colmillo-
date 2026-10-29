@@ -59,5 +59,19 @@
                 <Button Style="{StaticResource Outline}" Content="Abrir carpeta de ajustes" HorizontalAlignment="Left" Margin="0,14,0,0" Click="OpenFolder_Click" />
             </StackPanel>
         </Border>
+
+        <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+            <DockPanel>
+                <Image DockPanel.Dock="Left" Source="/Assets/isotipo.png" Height="44" Margin="0,0,16,0" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <Button DockPanel.Dock="Right" Style="{StaticResource Outline}" Content="Buscar actualizaciones" Click="Updates_Click"
+                        VerticalAlignment="Center" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="VersionText" Style="{StaticResource H2}" />
+                    <TextBlock Style="{StaticResource Sub}" FontSize="12"
+                               Text="Abre la página de versiones en el navegador. Para actualizar, vuelve a correr el instalador." />
+                </StackPanel>
+            </DockPanel>
+        </Border>
     </StackPanel>
 </local:PageBase>
