@@ -107,6 +107,51 @@ Windows Update baja `rz00a3dev.inf` (proveedor Razer Inc). El paquete registra
 (copiado a `Program Files (x86)\Razer\RzS3WizardPkg`), que abre el instalador de
 Synapse. `scripts/instalar.ps1 -BloquearSynapse` corta ese camino.
 
+## RAM: Kingston FURY Beast DDR4 RGB (SMBus)
+
+El SMBus de la placa (AMD, compatible PIIX4, base `0xB00`) solo se alcanza desde el kernel.
+Colmillo usa **PawnIO** (driver firmado y de codigo abierto) con su modulo
+`SmbusPIIX4.bin`, que viene incrustado en el ejecutable (LGPL-2.1). PawnIO solo atiende a
+procesos con privilegios de administrador. Toda transferencia toma el mutex global
+`Global\Access_SMBUS.HTP.Method`, el mismo que usan OpenRGB, HWiNFO e iCUE.
+
+Direcciones en esta PC (escaneo de solo lectura):
+
+| Direccion | Que es | Colmillo |
+|---|---|---|
+| `0x52`, `0x53` | SPD de cada modulo (configuracion de fabrica) | **nunca** se escribe |
+| `0x5A`, `0x5B` | Controlador de luz de cada modulo (SPD + 8) | lee el modelo y escribe |
+
+- Lecturas: **palabra** (protocolo 3); el valor util va en el byte alto. Una lectura de
+  un byte devuelve basura (el eco de la direccion).
+- Escrituras: un byte. Algunas fallan con `0x800701B1` (sin respuesta); se reintenta
+  hasta 5 veces, como OpenRGB.
+- Modelo (`0x06`): `0x23` Beast DDR4, `0x21` Beast blanco DDR4.
+- Cada cambio va entre `08=53` (abrir) y `08=44` (aplicar), con 10 ms entre pasos.
+- Antes de cambiar de modo: abrir, `0B=0` en cada modulo (indice: todos sincronizados), aplicar.
+
+| Registro | Uso |
+|---|---|
+| `09` | modo: 00 estatico, 01 arcoiris/espectro, 03 respiracion, 04 dinamico, 06 cometa, 09 llama, 0A crepusculo |
+| `0C` / `0D` / `0E` | direccion / retardo entre LEDs / velocidad |
+| `12-15` | tiempos del dinamico; `16-1D` tiempos y niveles de la respiracion |
+| `20` | brillo 0-100 |
+| `26` / `27` | largo del cometa / cantidad de modulos |
+| `30` | cantidad de colores; `31..` R, G, B de cada color |
+
+Arcoiris y espectro son el mismo modo: los distingue el retardo (`0D` = 0 o 4).
+Verificado contra los dos modulos reales (estatico rojo y espectro).
+
+## Grafica: Gigabyte RX 9060 XT Gaming OC 16G (no disponible)
+
+El controlador es "RGB Fusion 2 GPU" en I2C `0x73` (paquetes de 8 bytes: `88` modo,
+`40`/`B0`/`B1` colores, `AB` identificacion). Se llega por la API del driver de AMD
+(`ADL_Display_WriteAndReadI2C`, linea 1). Con el driver 32.0.32015.7029 **toda**
+transferencia I2C falla: ADL, ADL2, LargePayload y SMU, como usuario, administrador y
+SYSTEM. La propia libreria de Gigabyte (`GvDisplayA.dll`, `GvWriteI2C`) falla igual
+(`0x20000210`) y los registros de Gigabyte Control Center muestran `LedSet SendData fail`.
+Hay que volver a probar con otro driver.
+
 ## Macros
 
 Los **macros no se pueden guardar en el Cobra** (`macroGroup: false` en la config de

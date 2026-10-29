@@ -31,6 +31,8 @@
 #>
 param(
     [switch]$BloquearSynapse,
+    # Instala PawnIO (driver firmado de codigo abierto) para controlar la luz de la RAM.
+    [switch]$ConRam,
     [string]$Exe,
     # Uso interno: la copia elevada solo hace el bloqueo y sale.
     [switch]$SoloBloqueo
@@ -105,6 +107,11 @@ if (-not $tieneRuntime) {
     winget install --id Microsoft.DotNet.DesktopRuntime.9 --source winget --accept-package-agreements --accept-source-agreements
 }
 
+if ($ConRam -and -not (Test-Path 'C:\Program Files\PawnIO\PawnIOLib.dll')) {
+    Write-Host 'Instalando PawnIO (winget)...'
+    winget install --id namazso.PawnIO --source winget --accept-package-agreements --accept-source-agreements
+}
+
 # ---------- 3. Conseguir Colmillo.exe ----------
 if (-not $Exe) {
     $Exe = Join-Path $env:TEMP 'Colmillo-descarga.exe'
@@ -120,8 +127,14 @@ $instalado = Join-Path $destino 'Colmillo.exe'
 $anterior = if (Test-Path $instalado) { (Get-Item $instalado).VersionInfo.FileVersion } else { $null }
 
 # ---------- 4. Instalar ----------
-Get-Process Colmillo -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process Colmillo -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
+if (Get-Process Colmillo -ErrorAction SilentlyContinue) {
+    # Corre elevado (por la RAM) y un proceso sin elevar no lo puede cerrar.
+    Write-Host 'Cerrando Colmillo (pide administrador)...'
+    Start-Process taskkill.exe -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList '/IM', 'Colmillo.exe', '/F'
+    Start-Sleep -Milliseconds 500
+}
 New-Item -ItemType Directory -Force $destino | Out-Null
 Copy-Item $Exe $instalado -Force
 

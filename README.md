@@ -13,7 +13,10 @@ Sin cuentas, sin telemetria, sin codigo de red. C# + WPF sobre .NET 9.
 ## Que hace
 
 - **Rendimiento**: hasta 5 etapas de DPI (200-8500, paso 100) y sondeo 125/500/1000 Hz.
-- **Iluminacion**: apagado, estatico, respiracion (1, 2 o aleatorio), espectro, reactivo; brillo.
+- **Iluminacion**: mouse y RAM, todos juntos (apagado, estatico, respiracion, espectro)
+  o por separado. Mouse: ademas reactivo y respiracion aleatoria. RAM Kingston FURY RGB:
+  ademas arcoiris, dinamico, cometa, llama y crepusculo. La grafica Gigabyte RX 9060 XT
+  aparece como no disponible: el driver actual de AMD bloquea su I2C (ver PROTOCOLO.md).
 - **Botones**: capa normal y Hypershift. Teclas/atajos, multimedia, DPI, doble clic y
   turbo se graban en el mouse. Macros y "abrir programa" corren en Colmillo.
 - **Macros**: grabador (teclado y opcionalmente clics), editor de pasos, 4 modos.
@@ -28,7 +31,7 @@ Al apretar el boton de DPI aparece un aviso abajo a la derecha y la app se actua
 En PowerShell (tambien en un Windows recien instalado):
 
 ```
-irm https://github.com/MesshM/Colmillo-/releases/latest/download/instalar.ps1 -OutFile $env:TEMP\instalar-colmillo.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\instalar-colmillo.ps1 -BloquearSynapse
+irm https://github.com/MesshM/Colmillo-/releases/latest/download/instalar.ps1 -OutFile $env:TEMP\instalar-colmillo.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\instalar-colmillo.ps1 -ConRam
 ```
 
 Baja la ultima version de [Releases](https://github.com/MesshM/Colmillo-/releases),
@@ -36,6 +39,11 @@ instala el runtime de .NET 9 si falta, copia Colmillo a `%LOCALAPPDATA%\Programs
 y lo deja arrancando con Windows. **Para actualizar, se corre lo mismo**: los ajustes
 (`%APPDATA%\Colmillo`) no se tocan. Colmillo no busca actualizaciones solo; en
 Ajustes hay un boton que abre la pagina de versiones en el navegador.
+
+`-ConRam` instala **PawnIO** (driver firmado y de codigo abierto) para la luz de la RAM.
+PawnIO solo atiende a programas con privilegios de administrador, asi que la primera vez
+Colmillo pide un UAC ("Activar" en Iluminacion) y crea dos tareas programadas: una al
+iniciar sesion y otra que usa el acceso directo para abrirlo elevado **sin** UAC.
 
 `-BloquearSynapse` (pide administrador) evita que Windows Update instale el driver de
 Razer que abre el instalador de Synapse al conectar el mouse; conviene correrlo
@@ -82,6 +90,11 @@ El protocolo, y de donde se saco, esta en [PROTOCOLO.md](PROTOCOLO.md).
 - **WPF y no WebView/Electron**: sin Chromium no hay telemetria de navegador ni
   ~100 MB de procesos extra. Al cerrar la ventana se destruye y se recorta la memoria.
 - **Bandeja sin WinForms**: `NotifyIcon` cargaria todo WinForms; se usa `Shell_NotifyIcon`.
+- **Dos tareas y no una con una marca**: la copia que lanza el Programador de tareas no
+  veia un valor de HKCU escrito por la copia sin elevar. Una tarea sin disparador para
+  "abrir con ventana" evita pasar estado entre procesos.
+- **Modulo de PawnIO incrustado**: `SmbusPIIX4.bin` de PawnIO.Modules 0.2.11 (LGPL-2.1,
+  `Assets/PawnIO/COPYING`). El driver PawnIO se instala aparte (winget `namazso.PawnIO`).
 - **Macros por F13-F24**: el Cobra no guarda macros. El boton manda una tecla F13-F24
   (asignada en orden) y un hook de teclado la traga y corre el macro. Sin
   modificadores: Ctrl+Shift o Alt+Shift sueltos cambian el idioma del teclado.

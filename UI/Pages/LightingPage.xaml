@@ -3,23 +3,42 @@
                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                 xmlns:local="clr-namespace:Colmillo.UI.Pages"
                 xmlns:c="clr-namespace:Colmillo.UI.Controls">
-    <StackPanel MaxWidth="980" HorizontalAlignment="Left">
+    <StackPanel MaxWidth="1000" HorizontalAlignment="Left">
         <TextBlock Style="{StaticResource H1}" Text="Iluminación" />
-        <TextBlock Style="{StaticResource Sub}" Margin="0,4,0,22"
-                   Text="Efecto del logo Chroma. Lo ejecuta el propio mouse, sin que Colmillo tenga que estar abierto." />
+        <TextBlock Style="{StaticResource Sub}" Margin="0,4,0,18"
+                   Text="Luz del mouse y de la RAM, juntas o por separado. Los efectos los ejecuta cada dispositivo: siguen aunque Colmillo esté cerrado." />
+
+        <!-- Dispositivos -->
+        <WrapPanel x:Name="Devices" Margin="0,0,0,16" />
+
+        <!-- Modo y destino -->
+        <WrapPanel Margin="0,0,0,18">
+            <RadioButton Style="{StaticResource Segment}" GroupName="mode" Content="Todos juntos" x:Name="ModeTogether" Checked="Mode_Checked" />
+            <RadioButton Style="{StaticResource Segment}" GroupName="mode" Content="Por separado" x:Name="ModeSeparate" Checked="Mode_Checked" />
+            <Rectangle Width="1" Height="22" Fill="{DynamicResource Line}" Margin="10,0,14,0" x:Name="TargetDivider" />
+            <RadioButton Style="{StaticResource Segment}" GroupName="target" Content="Mouse" x:Name="TargetMouse" Checked="Target_Checked" />
+            <RadioButton Style="{StaticResource Segment}" GroupName="target" Content="RAM" x:Name="TargetRam" Checked="Target_Checked" />
+        </WrapPanel>
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="260" />
+                <ColumnDefinition Width="300" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- Vista previa -->
-            <Border Style="{StaticResource Card}" Margin="0,0,18,0" Padding="20,26" VerticalAlignment="Top">
+            <Border Style="{StaticResource Card}" Margin="0,0,18,0" Padding="16,22" VerticalAlignment="Top">
                 <StackPanel>
-                    <Border Height="340">
-                        <c:MouseDrawing x:Name="Preview" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
+                    <Grid Height="340">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Viewbox x:Name="MouseBox" Height="320" Margin="0,0,6,0">
+                                <c:MouseDrawing x:Name="Preview" />
+                            </Viewbox>
+                            <Viewbox x:Name="RamBox" Height="230" VerticalAlignment="Center">
+                                <c:RamDrawing x:Name="RamPreview" />
+                            </Viewbox>
+                        </StackPanel>
+                    </Grid>
                     <TextBlock x:Name="PreviewLabel" Style="{StaticResource Label}" HorizontalAlignment="Center" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
@@ -27,14 +46,9 @@
             <StackPanel Grid.Column="1">
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource H2}" Text="Efecto" Margin="0,0,0,14" />
-                        <WrapPanel x:Name="Effects">
-                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE7E8;" Content="Apagado" x:Name="FxOff" Checked="Effect_Checked" />
-                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE790;" Content="Estático" x:Name="FxStatic" Checked="Effect_Checked" />
-                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE9D9;" Content="Respiración" x:Name="FxBreath" Checked="Effect_Checked" />
-                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE706;" Content="Espectro" x:Name="FxSpectrum" Checked="Effect_Checked" />
-                            <RadioButton Style="{StaticResource OptionCard}" GroupName="fx" Tag="&#xE8B0;" Content="Reactivo" x:Name="FxReactive" Checked="Effect_Checked" />
-                        </WrapPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Efecto" Margin="0,0,0,4" />
+                        <TextBlock x:Name="EffectsHint" Style="{StaticResource Sub}" FontSize="12" Margin="0,0,0,14" />
+                        <WrapPanel x:Name="Effects" />
 
                         <StackPanel x:Name="BreathPanel" Margin="0,8,0,0">
                             <TextBlock Style="{StaticResource Label}" Text="COLORES DE LA RESPIRACIÓN" />
@@ -45,18 +59,18 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <StackPanel x:Name="SpeedPanel" Margin="0,8,0,0">
-                            <TextBlock Style="{StaticResource Label}" Text="DURACIÓN DEL BRILLO AL HACER CLIC" />
+                        <StackPanel x:Name="SpeedPanel" Margin="0,10,0,0">
+                            <TextBlock x:Name="SpeedLabel" Style="{StaticResource Label}" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Style="{StaticResource Sub}" Text="Corta" VerticalAlignment="Center" Margin="0,0,12,0" />
-                                <Slider Grid.Column="1" x:Name="Speed" Minimum="1" Maximum="4" IsSnapToTickEnabled="True" TickFrequency="1"
+                                <TextBlock x:Name="SpeedMin" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <Slider Grid.Column="1" x:Name="Speed" Minimum="1" Maximum="5" IsSnapToTickEnabled="True" TickFrequency="1"
                                         ValueChanged="Speed_Changed" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Sub}" Text="Larga" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <TextBlock Grid.Column="2" x:Name="SpeedMax" Style="{StaticResource Sub}" VerticalAlignment="Center" Margin="12,0,0,0" />
                             </Grid>
                         </StackPanel>
                     </StackPanel>

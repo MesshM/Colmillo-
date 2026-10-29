@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Colmillo</AssemblyName>
     <RootNamespace>Colmillo</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\colmillo.ico</ApplicationIcon>
 
@@ -32,6 +32,8 @@
     <Resource Include="Assets\colmillo.ico" />
     <Resource Include="Assets\isotipo.png" />
     <Resource Include="Assets\imagotipo.png" />
+    <!-- Modulo SMBus de PawnIO.Modules 0.2.11 (LGPL-2.1, Assets/PawnIO/COPYING). -->
+    <EmbeddedResource Include="Assets\PawnIO\SmbusPIIX4.bin" LogicalName="Colmillo.SmbusPIIX4.bin" />
   </ItemGroup>
 
 </Project>

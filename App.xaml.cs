@@ -23,6 +23,17 @@ public partial class App : Application
     public static new App Current => (App)Application.Current;
     public AppSettings Settings { get; private set; } = new();
     public DeviceService Device { get; private set; } = null!;
+    public RamService Ram { get; private set; } = null!;
+
+    /// <summary>
+    /// Relanza Colmillo como administrador (un aviso UAC). La copia elevada crea la tarea de
+    /// inicio y desde ahi arranca siempre elevada sin volver a preguntar.
+    /// </summary>
+    public void RelaunchElevated()
+    {
+        if (!SystemIntegration.StartElevated()) return;
+        Quit();
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -36,13 +47,43 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (_, a) => LogError(a.ExceptionObject as Exception);
 
         _single = new Mutex(true, MutexName, out var first);
+        if (!first && e.Args.Contains("--relanzado"))
+        {
+            // La copia sin elevar que nos lanzo todavia se esta cerrando: se espera su turno.
+            try { first = _single.WaitOne(TimeSpan.FromSeconds(10)); }
+            catch (AbandonedMutexException) { first = true; }
+        }
         if (!first)
         {
-            // Ya hay una instancia en la bandeja: se le pide que muestre su ventana.
-            try { EventWaitHandle.OpenExisting(ShowEventName).Set(); }
-            catch (WaitHandleCannotBeOpenedException) { }
+            // Ya hay una instancia en la bandeja: se le pide que muestre su ventana. Si esa
+            // instancia corre elevada, una sin elevar no puede tocar su evento (Windows no
+            // deja escribir "hacia arriba" de nivel de integridad): se pasa por la tarea,
+            // que arranca otra elevada y esa si puede avisarle.
+            if (!e.Args.Contains("--bandeja"))
+            {
+                try { EventWaitHandle.OpenExisting(ShowEventName).Set(); }
+                catch (Exception ex) when (ex is WaitHandleCannotBeOpenedException or UnauthorizedAccessException)
+                {
+                    SystemIntegration.RunStartupTask();
+                }
+            }
             Shutdown();
             return;
+        }
+
+        // Sin elevar y con la tarea creada: se relanza por la tarea (elevada, sin UAC) para
+        // que PawnIO acepte el acceso a la RAM.
+        if (!SystemIntegration.IsElevated && !e.Args.Contains("--bandeja") && SystemIntegration.HasStartupTask)
+        {
+            _single.ReleaseMutex();
+            _single.Dispose();
+            _single = null;
+            if (SystemIntegration.RunStartupTask())
+            {
+                Shutdown();
+                return;
+            }
+            _single = new Mutex(true, MutexName, out _);
         }
         _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
         new Thread(() =>
@@ -72,10 +113,14 @@ public partial class App : Application
 
         _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); Settings.Save(); };
 
+        if (Settings.LightingTogether) Settings.SyncRamToMouse();
+        Ram = new RamService(Settings);
+        Ram.StateChanged += () => Dispatcher.BeginInvoke(() => _window?.Refresh());
+
         SystemIntegration.SetStartWithWindows(Settings.StartWithWindows);
         // Arrancando en la bandeja, se recorta la memoria recien despues de conectar:
         // el JIT y el primer I/O HID son lo que mas infla el arranque.
-        Device.ConnectAndApplyAsync().ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+        Task.WhenAll(Device.ConnectAndApplyAsync(), Ram.ConnectAndApplyAsync()).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
         {
             if (_window is null) SystemIntegration.TrimMemory();
         }));
@@ -204,6 +249,7 @@ public partial class App : Application
         Settings.Save();
         _tray?.Dispose();
         Device.Dispose();
+        Ram.Dispose();
         Shutdown();
     }
 }
