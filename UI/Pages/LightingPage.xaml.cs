@@ -61,7 +61,8 @@ public partial class LightingPage : PageBase
     static GpuService GpuSvc => App.Current.Gpu;
     static GpuProfile G => App.Current.Settings.Gpu;
 
-    public LightingPage()
+    /// <param name="ram">Abrir con la RAM elegida (desde su capsula), si la luz va por separado.</param>
+    public LightingPage(bool ram = false)
     {
         InitializeComponent();
         Color1.ColorChanged += hex =>
@@ -76,7 +77,7 @@ public partial class LightingPage : PageBase
             else Write(c1: hex);
         };
         Color2.ColorChanged += hex => Write(c2: hex);
-        _target = Settings.LightingTogether ? Target.Together : Target.Mouse;
+        _target = Settings.LightingTogether ? Target.Together : ram && RamSvc.Available ? Target.Ram : Target.Mouse;
         Reload();
     }
 
@@ -218,10 +219,13 @@ public partial class LightingPage : PageBase
         UpdateView();
         Commit(async () =>
         {
+            // Juntos: los tres arrancan el efecto en el mismo instante.
+            var count = (toMouse ? 1 : 0) + (toRam ? 1 : 0) + (toGpu ? 1 : 0);
+            var sync = _target == Target.Together && count > 1 ? new LightSync(count) : null;
             var tasks = new List<Task>();
-            if (toMouse) tasks.Add(Device.ApplyLightingAsync());
-            if (toRam) tasks.Add(RamSvc.ApplyAsync());
-            if (toGpu) tasks.Add(GpuSvc.ApplyAsync());
+            if (toMouse) tasks.Add(Device.ApplyLightingAsync(sync));
+            if (toRam) tasks.Add(RamSvc.ApplyAsync(sync));
+            if (toGpu) tasks.Add(GpuSvc.ApplyAsync(sync));
             await Task.WhenAll(tasks);
         });
     }
@@ -395,10 +399,10 @@ public partial class LightingPage : PageBase
             : Target.Mouse;
         if (Settings.LightingTogether)
         {
-            // Al volver a "juntos", la RAM y la grafica se igualan al mouse en el acto.
+            // Al volver a "juntos", la RAM y la grafica se igualan al mouse en el acto, y los
+            // tres arrancan a la vez.
             Settings.SyncToMouse();
-            if (RamSvc.Available) _ = RamSvc.ApplyAsync();
-            if (GpuSvc.Available) _ = GpuSvc.ApplyAsync();
+            _ = App.Current.ApplyLightingTogetherAsync();
         }
         Reload();
     }
@@ -440,7 +444,8 @@ public partial class LightingPage : PageBase
         var random = BrRandom.IsChecked == true;
 
         // Velocidad: en el mouse solo existe la duracion del reactivo; en juntos, la de RAM y grafica.
-        var showSpeed = fx.Speed && (_target != Target.Together || RamSvc.Available || GpuSvc.Available) && !(key == "breath" && _target == Target.Mouse);
+        // Juntos no hay velocidad: la RAM y la grafica van a la mas lenta para seguir al mouse.
+        var showSpeed = fx.Speed && _target != Target.Together && !(key == "breath" && _target == Target.Mouse);
         SpeedPanel.Visibility = showSpeed ? Visibility.Visible : Visibility.Collapsed;
         if (_target == Target.Mouse)
         {

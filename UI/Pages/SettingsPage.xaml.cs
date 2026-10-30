@@ -23,6 +23,11 @@ public partial class SettingsPage : PageBase
         ThemeDark.IsChecked = Settings.Theme == "oscuro";
         Startup.IsChecked = Settings.StartWithWindows;
         Tray.IsChecked = Settings.CloseToTray;
+        StopConflicts.IsChecked = Settings.StopLightingConflicts;
+        StopConflicts.IsEnabled = SystemIntegration.IsElevated;
+        BreathStep.Value = Settings.SyncBreathStep;
+        BreathStepValue.Text = BreathLabel(Settings.SyncBreathStep);
+        BuildParts();
         var v = typeof(App).Assembly.GetName().Version;
         VersionText.Text = $"Colmillo {v?.Major}.{v?.Minor}.{v?.Build}";
         BuildInfo();
@@ -53,6 +58,82 @@ public partial class SettingsPage : PageBase
             Info.Children.Add(k);
             Info.Children.Add(v);
         }
+    }
+
+    void BuildParts()
+    {
+        var ram = App.Current.Ram;
+        var gpu = App.Current.Gpu;
+        var amd = App.Current.Amd;
+        var pawn = Services.State(Requirements.PawnIoService) switch
+        {
+            Services.Running => "PawnIO activo",
+            0 => "PawnIO no instalado",
+            _ => SystemIntegration.IsElevated ? "PawnIO detenido" : "PawnIO detenido (Colmillo sin administrador)",
+        };
+        var others = Requirements.ConflictingApps();
+        (string, string)[] rows =
+        [
+            ("Memoria RAM", $"{ram.Status} · {pawn}"),
+            ("Luz de la gráfica", $"{gpu.Status} · driver de AMD, sin Gigabyte Control Center"),
+            ("Ventiladores", amd.Available ? $"{amd.Name} · ADLX del driver de AMD" : amd.Status),
+            ("Pisan la luz", others.Count == 0 ? "Nada abierto" : string.Join(", ", others)),
+        ];
+        Fill(Parts, rows);
+    }
+
+    static void Fill(Grid grid, (string, string)[] rows)
+    {
+        grid.Children.Clear();
+        grid.RowDefinitions.Clear();
+        for (var i = 0; i < rows.Length; i++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var k = Text(rows[i].Item1, "Sub");
+            k.Margin = new Thickness(0, 6, 0, 6);
+            var v = Text(rows[i].Item2, "Body");
+            v.TextWrapping = TextWrapping.Wrap;
+            v.Margin = new Thickness(0, 6, 0, 6);
+            Grid.SetRow(k, i);
+            Grid.SetRow(v, i);
+            Grid.SetColumn(v, 1);
+            grid.Children.Add(k);
+            grid.Children.Add(v);
+        }
+    }
+
+    async void StopConflicts_Changed(object sender, RoutedEventArgs e)
+    {
+        if (Loading) return;
+        Settings.StopLightingConflicts = StopConflicts.IsChecked == true;
+        App.Current.SaveSoon();
+        if (Settings.StopLightingConflicts)
+        {
+            await Task.Run(Requirements.StopFuryService);
+            _ = App.Current.Ram.ApplyAsync();
+        }
+        BuildParts();
+    }
+
+    static string BreathLabel(int step) => step switch { 9 => "Más lento", 1 => "Más rápido", _ => $"{step} de 9" };
+
+    void BreathStep_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (Loading) return;
+        Settings.SyncBreathStep = (int)e.NewValue;
+        BreathStepValue.Text = BreathLabel(Settings.SyncBreathStep);
+        App.Current.SaveSoon();
+    }
+
+    void BreathStep_Released(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (Settings.LightingTogether) _ = App.Current.ApplyLightingTogetherAsync();
+    }
+
+    async void Rescan_Click(object sender, RoutedEventArgs e)
+    {
+        await Task.WhenAll(App.Current.Ram.RecheckAsync(), App.Current.Gpu.RecheckAsync(), App.Current.Amd.ConnectAndApplyAsync());
+        BuildParts();
     }
 
     void Theme_Checked(object sender, RoutedEventArgs e)

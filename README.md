@@ -1,7 +1,7 @@
 # Colmillo
 
 Reemplazo liviano de Razer Synapse para el **Razer Cobra** (USB, PID 0x00A3), con la luz
-de la RAM Kingston FURY y de la grafica Gigabyte RX 9060 XT.
+de la RAM Kingston FURY y de la grafica Gigabyte RX 9060 XT (luz y ventiladores).
 Sin cuentas ni telemetria. C# + WPF sobre .NET 9.
 
 | | Synapse 4 | Colmillo |
@@ -12,6 +12,12 @@ Sin cuentas ni telemetria. C# + WPF sobre .NET 9.
 | Red | siempre | solo al apretar "Buscar actualizaciones" (GitHub) |
 
 ## Que hace
+
+El menu tiene **Iluminacion** (de todos los dispositivos) y una capsula por dispositivo con
+su estado; al abrirla aparecen sus opciones. Mouse: rendimiento, botones, macros y puntero
+de Windows. Grafica: ventiladores, overclock y metricas. RAM: solo luz (su capsula abre
+Iluminacion). Las paginas entran con una animacion corta y la ventana usa las animaciones de
+Windows al minimizar y maximizar.
 
 - **Rendimiento**: hasta 5 etapas de DPI (200-8500, paso 100) y sondeo 125/500/1000 Hz.
 - **Iluminacion**: mouse, RAM y grafica, todos juntos (apagado, estatico, respiracion,
@@ -25,6 +31,17 @@ Sin cuentas ni telemetria. C# + WPF sobre .NET 9.
 - **Macros**: grabador (teclado y opcionalmente clics), editor de pasos, 4 modos.
 - **Puntero de Windows**: esquemas de cursores (y uno propio), tamano, velocidad,
   precision, estela, sonar, rueda, doble clic, botones invertidos.
+- **Ventiladores de la grafica**: curva de 5 puntos arrastrable (como MSI Afterburner),
+  tres puntos de partida, cero RPM, y temperatura, punto caliente y RPM en vivo. Va por
+  ADLX, la API del driver de AMD; sin administrador. Colmillo reaplica la curva al iniciar.
+- **Overclock**: los modos automaticos del driver de AMD (los de Gigabyte Control Center):
+  Silencioso, Equilibrado, Rage y overclock automatico. Se reaplican al iniciar.
+- **Metricas**: FPS, grafica (uso, temperaturas, relojes, VRAM, consumo, ventilador), CPU
+  (uso y reloj, total y por nucleo; temperatura Tctl y por CCD) y RAM, encima de los juegos
+  como RivaTuner. `Ctrl+Shift+O` lo muestra u oculta.
+- **Componentes** (Ajustes): al iniciar, Colmillo arranca PawnIO si estaba detenido y
+  detiene el servicio de Kingston FURY CTRL, que pisa la luz de la RAM. Si la RAM o la
+  grafica no aparecen, reintenta solo; se ve el detalle en `%APPDATA%\Colmillo\dispositivos.log`.
 
 DPI, luz y botones quedan en la memoria del mouse: funcionan aunque Colmillo no corra.
 Al apretar el boton de DPI aparece un aviso abajo a la derecha y la app se actualiza.
@@ -74,7 +91,8 @@ dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile
 ```
 
 Sale `publish\Colmillo.exe` (~1 MB; usa el runtime de escritorio de .NET 9).
-`--bandeja` arranca sin ventana. Icono, isotipo e imagotipo se regeneran desde los
+`--bandeja` arranca sin ventana. `--sin-elevar` (para depurar) no se relanza elevado por la
+tarea: sin RAM, pero se puede manejar con UI Automation. Icono, isotipo e imagotipo se regeneran desde los
 PNG de la marca con `pwsh tools/assets.ps1 -Origen <carpeta>`.
 
 ## Como esta armado
@@ -103,10 +121,20 @@ El protocolo, y de donde se saco, esta en [PROTOCOLO.md](PROTOCOLO.md).
 - **Dos tareas y no una con una marca**: la copia que lanza el Programador de tareas no
   veia un valor de HKCU escrito por la copia sin elevar. Una tarea sin disparador para
   "abrir con ventana" evita pasar estado entre procesos.
+- **RAM como MSI Center**: secuencia, tiempos e indice por modulo copiados de su
+  `MBAPI_x86.dll`, con el mutex del SMBus tomado toda la secuencia. Deteccion por el SPD
+  (fabricante Kingston), porque el registro de modelo da 0 tras la actualizacion de FURY CTRL.
+- **Nada espera de forma sincronica en el hilo de UI**: `AmdService.EndMonitor` esperaba el
+  semaforo de ADLX con `Wait()` desde un `Unloaded`, y la lectura que lo tenia necesitaba volver
+  a ese hilo para soltarlo: la app quedaba trabada (con la ventana cerrada Windows igual la ve
+  "respondiendo") y no atendia ni la orden de cerrarse. `Shell/UiWatchdog` deja en
+  `dispositivos.log` si la UI deja de responder o su cola de mensajes se llena.
+- **Ventiladores por ADLX y no por ADL**: el Overdrive8 de ADL no responde en RDNA 4.
+  ADLX se abre al iniciar y con la pagina de ventiladores a la vista; despues se cierra.
 - **Grafica por ADL, abierto y cerrado en cada uso**: el controlador de luz responde una
   sola lectura por sesion de ADL, y asi `atiadlxx.dll` no queda cargada en la bandeja.
   Guardar en la tarjeta escribe su memoria: se hace 3 s despues del ultimo cambio.
-- **Modulo de PawnIO incrustado**: `SmbusPIIX4.bin` de PawnIO.Modules 0.2.11 (LGPL-2.1,
+- **Modulos de PawnIO incrustados**: `SmbusPIIX4.bin` (RAM) y `AMDFamily17.bin` (temperatura del Ryzen) de PawnIO.Modules 0.2.11 (LGPL-2.1,
   `Assets/PawnIO/COPYING`). El driver PawnIO se instala aparte (winget `namazso.PawnIO`).
 - **Macros por F13-F24**: el Cobra no guarda macros. El boton manda una tecla F13-F24
   (asignada en orden) y un hook de teclado la traga y corre el macro. Sin
@@ -125,3 +153,6 @@ El protocolo, y de donde se saco, esta en [PROTOCOLO.md](PROTOCOLO.md).
   fuente de verdad y las reescribe al conectar.
 - Con Synapse abierto, Synapse pisa la luz y el modo. La app avisa y ofrece cerrarlo.
 - Con Gigabyte Control Center abierto, su RGB Fusion puede pisar la luz de la grafica.
+  No hace falta abrirlo: la grafica se controla sin el.
+- Con MSI Afterburner abierto, su curva pisa la de Colmillo. La pagina avisa.
+- Mystic Light (MSI Center) tambien escribe la RAM al abrirse.

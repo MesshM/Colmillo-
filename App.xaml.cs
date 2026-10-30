@@ -25,6 +25,11 @@ public partial class App : Application
     public DeviceService Device { get; private set; } = null!;
     public RamService Ram { get; private set; } = null!;
     public GpuService Gpu { get; private set; } = null!;
+    public AmdService Amd { get; private set; } = null!;
+    public Core.Metrics.MetricsService Metrics { get; private set; } = null!;
+    MetricsOverlay? _overlay;
+    HotKey? _overlayKey;
+    UiWatchdog? _watchdog;
 
     /// <summary>
     /// Relanza Colmillo como administrador (un aviso UAC). La copia elevada crea la tarea de
@@ -82,7 +87,8 @@ public partial class App : Application
 
         // Sin elevar y con la tarea creada: se relanza por la tarea (elevada, sin UAC) para
         // que PawnIO acepte el acceso a la RAM.
-        if (!SystemIntegration.IsElevated && SystemIntegration.HasStartupTask)
+        // --sin-elevar (para depurar): se queda sin elevar, sin RAM, y se puede manejar con UI Automation.
+        if (!SystemIntegration.IsElevated && !e.Args.Contains("--sin-elevar") && SystemIntegration.HasStartupTask)
         {
             _single.ReleaseMutex();
             _single.Dispose();
@@ -119,12 +125,21 @@ public partial class App : Application
         Device.DpiChanged += dpi => Dispatcher.BeginInvoke(() => OnHardwareDpi(dpi));
 
         _tray = new TrayIcon("Colmillo");
+        _watchdog = new UiWatchdog(Dispatcher, _tray.Handle,
+            () => _window?.CurrentPage ?? "ventana cerrada (bandeja)");
         _tray.Click += ShowWindow;
         _tray.RightClick += ShowTrayMenu;
         _tray.CloseRequested += Quit;
         // Al enchufar algo USB llegan varios avisos seguidos: se espera a que se calme.
         _tray.DevicesChanged += () => { _recheckTimer.Stop(); _recheckTimer.Start(); };
-        _tray.Resumed += () => _ = Device.ConnectAndApplyAsync();
+        _tray.Resumed += () =>
+        {
+            // Al suspender, la RAM y la grafica pueden perder la luz o dejar de responder un rato.
+            _ = Device.ConnectAndApplyAsync();
+            _ = Ram.RecheckAsync();
+            _ = Gpu.RecheckAsync();
+            _ = Amd.ConnectAndApplyAsync();
+        };
         _recheckTimer.Tick += (_, _) => { _recheckTimer.Stop(); _ = Device.RecheckAsync(); };
 
         _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); Settings.Save(); };
@@ -134,16 +149,54 @@ public partial class App : Application
         Ram.StateChanged += () => Dispatcher.BeginInvoke(() => _window?.Refresh());
         Gpu = new GpuService(Settings);
         Gpu.StateChanged += () => Dispatcher.BeginInvoke(() => _window?.Refresh());
+        Amd = new AmdService(Settings);
+        Amd.StateChanged += () => Dispatcher.BeginInvoke(() => _window?.Refresh());
+        Metrics = new Core.Metrics.MetricsService(Amd);
+        // Ctrl+Shift+O muestra u oculta las metricas en pantalla, tambien dentro de un juego.
+        _overlayKey = new HotKey(HotKey.Control | HotKey.Shift, 0x4F);
+        _overlayKey.Pressed += () =>
+        {
+            Settings.Metrics.Overlay = !Settings.Metrics.Overlay;
+            SaveSoon();
+            UpdateOverlay();
+            _window?.Refresh();
+        };
+        UpdateOverlay();
 
         SystemIntegration.SetStartWithWindows(Settings.StartWithWindows);
         // Arrancando en la bandeja, se recorta la memoria recien despues de conectar:
         // el JIT y el primer I/O HID son lo que mas infla el arranque.
-        Task.WhenAll(Device.ConnectAndApplyAsync(), Ram.ConnectAndApplyAsync(), Gpu.ConnectAndApplyAsync()).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+        Task.WhenAll(Device.ConnectAndApplyAsync(), Ram.ConnectAndApplyAsync(), Gpu.ConnectAndApplyAsync(), Amd.ConnectAndApplyAsync()).ContinueWith(_ => Dispatcher.BeginInvoke(async () =>
         {
+            // Cada uno se conecto a su ritmo: en "todos juntos" se vuelve a arrancar el efecto a la vez.
+            if (Settings.LightingTogether) await ApplyLightingTogetherAsync();
+            _ = Task.Run(Core.Metrics.MetricsService.LogCpuTemperature);
             if (_window is null) SystemIntegration.TrimMemory();
         }));
 
         if (!e.Args.Contains("--bandeja")) ShowWindow();
+    }
+
+    public bool OverlayHotKeyRegistered => _overlayKey?.Registered == true;
+
+    /// <summary>Abre o cierra el overlay de metricas segun los ajustes; con cambios de formato, lo rehace.</summary>
+    public void UpdateOverlay(bool rebuild = false)
+    {
+        if (rebuild || !Settings.Metrics.Overlay)
+        {
+            _overlay?.Close();
+            _overlay = null;
+        }
+        if (!Settings.Metrics.Overlay || _overlay is not null) return;
+        _overlay = new MetricsOverlay(Metrics, Settings.Metrics);
+        if (!Settings.Metrics.OnlyInGames) _overlay.Show();
+    }
+
+    /// <summary>Aplica la luz de mouse, RAM y grafica arrancando el efecto en el mismo instante.</summary>
+    public Task ApplyLightingTogetherAsync()
+    {
+        var sync = new LightSync(1 + (Ram.Available ? 1 : 0) + (Gpu.Available ? 1 : 0));
+        return Task.WhenAll(Device.ApplyLightingAsync(sync), Ram.ApplyAsync(sync), Gpu.ApplyAsync(sync));
     }
 
     /// <summary>Corre el instalador de una actualizacion ya verificada y cierra Colmillo.</summary>
@@ -274,8 +327,11 @@ public partial class App : Application
         _quitting = true;
         _saveTimer.Stop();
         Settings.Save();
+        _watchdog?.Dispose();
         _tray?.Dispose();
         Device.Dispose();
+        _overlay?.Close();
+        _overlayKey?.Dispose();
         Ram.Dispose();
         Gpu.Flush();
         Shutdown();

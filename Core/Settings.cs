@@ -54,6 +54,40 @@ public sealed class GpuProfile
     public int Speed { get; set; } = 3;
 }
 
+/// <summary>Un punto de la curva del ventilador: a esta temperatura, esta velocidad.</summary>
+public sealed class FanPoint
+{
+    public int Temperature { get; set; }
+    /// <summary>Porcentaje de la velocidad maxima.</summary>
+    public int Speed { get; set; }
+
+    public FanPoint() { }
+    public FanPoint(int temperature, int speed) => (Temperature, Speed) = (temperature, speed);
+}
+
+public sealed class GpuFanProfile
+{
+    /// <summary>False: curva de fabrica del driver. True: la curva de abajo, aplicada al iniciar.</summary>
+    public bool Custom { get; set; }
+    /// <summary>Cinco puntos, como la curva de AMD Adrenalin. Null hasta leer la del driver.</summary>
+    public List<FanPoint>? Points { get; set; }
+    /// <summary>Ventilador detenido por debajo de ~50 °C (lo decide el firmware).</summary>
+    public bool ZeroRpm { get; set; } = true;
+}
+
+/// <summary>Overlay de metricas sobre los juegos (como RivaTuner con Afterburner).</summary>
+public sealed class MetricsProfile
+{
+    public bool Overlay { get; set; }
+    /// <summary>Mostrarlo solo cuando el driver cuenta FPS (hay un juego 3D abierto).</summary>
+    public bool OnlyInGames { get; set; } = true;
+    /// <summary>arriba-izq, arriba-der, abajo-izq, abajo-der.</summary>
+    public string Corner { get; set; } = "arriba-izq";
+    public int FontSize { get; set; } = 14;
+    /// <summary>Claves de <see cref="Metrics.MetricCatalog"/> que se muestran.</summary>
+    public List<string> Shown { get; set; } = ["fps", "gpu_usage", "gpu_temp", "gpu_clock", "cpu_usage", "cpu_temp", "ram"];
+}
+
 public sealed class AppSettings
 {
     public string Theme { get; set; } = "sistema";
@@ -63,6 +97,17 @@ public sealed class AppSettings
     public List<Macro> Macros { get; set; } = [];
     public RamProfile Ram { get; set; } = new();
     public GpuProfile Gpu { get; set; } = new();
+    public GpuFanProfile GpuFans { get; set; } = new();
+    public MetricsProfile Metrics { get; set; } = new();
+    /// <summary>Perfil de la grafica (silencioso, equilibrado, rage, overclock automatico). Unknown: no tocar.</summary>
+    public Core.Gpu.GpuTuning GpuTuning { get; set; } = Core.Gpu.GpuTuning.Unknown;
+    /// <summary>Detener al iniciar el servicio de Kingston FURY CTRL, que pisa la luz de la RAM.</summary>
+    public bool StopLightingConflicts { get; set; } = true;
+    /// <summary>
+    /// Ritmo de la respiracion de la RAM en "todos juntos" (1 rapido ... 9 lento), para que
+    /// siga a la del mouse, que el firmware fija. Se calibra en Ajustes.
+    /// </summary>
+    public int SyncBreathStep { get; set; } = 9;
     /// <summary>Iluminacion de todos los dispositivos junta (solo efectos que tienen todos).</summary>
     public bool LightingTogether { get; set; } = true;
     /// <summary>Esquema de cursores de Windows que habia antes del primer cambio, para poder volver.</summary>

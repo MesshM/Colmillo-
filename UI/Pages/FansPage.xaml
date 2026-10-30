@@ -1,0 +1,88 @@
+<local:PageBase x:Class="Colmillo.UI.Pages.FansPage"
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:local="clr-namespace:Colmillo.UI.Pages"
+                xmlns:c="clr-namespace:Colmillo.UI.Controls">
+    <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+        <TextBlock Style="{StaticResource H1}" Text="Ventiladores" />
+        <TextBlock x:Name="Subtitle" Style="{StaticResource Sub}" Margin="0,4,0,22"
+                   Text="Curva de los ventiladores de la gráfica, como en MSI Afterburner. La aplica el driver de AMD: Colmillo la vuelve a poner al iniciar." />
+
+        <Border x:Name="Warning" Visibility="Collapsed" Margin="0,0,0,18" Padding="16,12"
+                CornerRadius="{StaticResource RadiusBox}" Background="{DynamicResource WarnBg}">
+            <DockPanel>
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE7BA;" FontSize="16" Foreground="{DynamicResource Warn}"
+                           DockPanel.Dock="Left" Margin="0,0,12,0" />
+                <TextBlock x:Name="WarningText" TextWrapping="Wrap" VerticalAlignment="Center" FontSize="13"
+                           FontWeight="SemiBold" Foreground="{DynamicResource Warn}" />
+            </DockPanel>
+        </Border>
+
+        <!-- Lecturas -->
+        <UniformGrid Columns="3" Margin="0,0,0,18">
+            <Border Style="{StaticResource Card}" Margin="0,0,12,0" Padding="18,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="TEMPERATURA" />
+                    <TextBlock x:Name="TempText" FontFamily="{StaticResource Display}" FontSize="30" FontWeight="Bold"
+                               Foreground="{DynamicResource Wordmark}" Text="–" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="6,0,6,0" Padding="18,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="PUNTO CALIENTE" />
+                    <TextBlock x:Name="HotspotText" FontFamily="{StaticResource Display}" FontSize="30" FontWeight="Bold"
+                               Foreground="{DynamicResource Wordmark}" Text="–" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource Card}" Margin="12,0,0,0" Padding="18,14">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Label}" Text="VENTILADOR" />
+                    <TextBlock x:Name="RpmText" FontFamily="{StaticResource Display}" FontSize="30" FontWeight="Bold"
+                               Foreground="{DynamicResource Wordmark}" Text="–" />
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <Border Style="{StaticResource Card}" x:Name="CurveCard">
+            <StackPanel>
+                <Grid>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource H2}" Text="Curva" />
+                        <TextBlock x:Name="CurveHint" Style="{StaticResource Sub}" FontSize="12" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <RadioButton Style="{StaticResource Segment}" GroupName="fanmode" Content="De fábrica" x:Name="ModeAuto" Checked="Mode_Checked" />
+                        <RadioButton Style="{StaticResource Segment}" GroupName="fanmode" Content="Personalizada" x:Name="ModeCustom" Checked="Mode_Checked" Margin="0" />
+                    </StackPanel>
+                </Grid>
+
+                <WrapPanel x:Name="Presets" Margin="0,16,0,6">
+                    <TextBlock Style="{StaticResource Label}" Text="PUNTO DE PARTIDA" VerticalAlignment="Center" Margin="2,0,12,0" />
+                </WrapPanel>
+
+                <c:FanCurveEditor x:Name="Editor" Margin="0,10,0,0" />
+
+                <CheckBox Style="{StaticResource Switch}" x:Name="ZeroRpm" Margin="0,18,0,0" Checked="ZeroRpm_Changed" Unchecked="ZeroRpm_Changed">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Body}" Text="Detener los ventiladores en reposo" />
+                        <TextBlock Style="{StaticResource Sub}" FontSize="12"
+                                   Text="Zero RPM: con la gráfica fría los ventiladores se apagan del todo. El umbral lo decide la tarjeta." />
+                    </StackPanel>
+                </CheckBox>
+
+                <DockPanel Margin="0,18,0,0">
+                    <TextBlock x:Name="ApplyStatus" Style="{StaticResource Sub}" FontSize="12" VerticalAlignment="Center" />
+                </DockPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}" x:Name="Missing" Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock Style="{StaticResource H2}" Text="No hay control de ventiladores" Margin="0,0,0,6" />
+                <TextBlock Style="{StaticResource Sub}"
+                           Text="Colmillo usa ADLX, la API que trae el driver de AMD. Hace falta una gráfica AMD con control manual del ventilador y el driver Adrenalin instalado." />
+                <Button Style="{StaticResource Outline}" Content="Reintentar" HorizontalAlignment="Left" Margin="0,14,0,0" Click="Retry_Click" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</local:PageBase>

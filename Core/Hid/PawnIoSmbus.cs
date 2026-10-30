@@ -23,6 +23,7 @@ public enum SmbusState
 /// </summary>
 public sealed class PawnIoSmbus : IDisposable
 {
+    const int ProtoByte = 1;
     const int ProtoByteData = 2;
     const int ProtoWordData = 3;
     // Mutex que comparten todos los programas que tocan el SMBus (OpenRGB, HWiNFO, iCUE,
@@ -77,7 +78,7 @@ public sealed class PawnIoSmbus : IDisposable
         return (new PawnIoSmbus(lib, handle, execute, close), SmbusState.Ready);
     }
 
-    static string? FindLibrary()
+    internal static string? FindLibrary()
     {
         using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO");
         var dir = key?.GetValue("InstallLocation") as string;
@@ -102,34 +103,64 @@ public sealed class PawnIoSmbus : IDisposable
     int Xfer(byte address, bool read, byte command, int protocol, byte data, out ulong result)
     {
         var output = new ulong[1];
-        _busMutex.WaitOne();
-        try
-        {
-            var hr = _execute(_handle, "ioctl_smbus_xfer",
-                [address, read ? 1UL : 0UL, command, (ulong)protocol, data], (UIntPtr)5,
-                output, (UIntPtr)1, out _);
-            result = output[0];
-            return hr;
-        }
-        finally
-        {
-            _busMutex.ReleaseMutex();
-        }
+        using var bus = Lock();
+        var hr = _execute(_handle, "ioctl_smbus_xfer",
+            [address, read ? 1UL : 0UL, command, (ulong)protocol, data], (UIntPtr)5,
+            output, (UIntPtr)1, out _);
+        result = output[0];
+        return hr;
     }
 
     /// <summary>
-    /// Escribe un byte. Reintenta como OpenRGB: los controladores de luz de la RAM a veces
-    /// no responden (NACK) si el bus esta ocupado o todavia procesan el comando anterior.
+    /// Toma el bus para una secuencia entera, como MSI Center: con el mutex solo por
+    /// transferencia, el servicio de Kingston (FURY CTRL) o Mystic Light se meten entre dos
+    /// bytes y el controlador queda a medio cambiar. El mutex de Windows es reentrante, asi
+    /// que cada transferencia de adentro lo vuelve a tomar sin bloquearse.
+    /// </summary>
+    public IDisposable Lock()
+    {
+        try
+        {
+            // Otro programa puede quedarse con el bus; pasado el plazo se sigue igual, como MSI.
+            return _busMutex.WaitOne(TimeSpan.FromSeconds(2)) ? new Release(_busMutex) : new Release(null);
+        }
+        catch (AbandonedMutexException)
+        {
+            // El dueno anterior murio con el bus tomado: el mutex ya es nuestro.
+            return new Release(_busMutex);
+        }
+    }
+
+    sealed class Release(Mutex? mutex) : IDisposable
+    {
+        public void Dispose() => mutex?.ReleaseMutex();
+    }
+
+    /// <summary>
+    /// Escribe un byte. Los controladores de luz de la RAM a veces no responden (NACK) si el
+    /// bus esta ocupado o todavia procesan el comando anterior: MSI Center reintenta hasta
+    /// 30 veces cada escritura, sin rendirse a la quinta como hacia Colmillo.
     /// </summary>
     public bool WriteByte(byte address, byte command, byte value)
     {
-        for (var attempt = 1; attempt <= 5; attempt++)
+        for (var attempt = 1; attempt <= 30; attempt++)
         {
             if (Xfer(address, read: false, command, ProtoByteData, value, out _) == 0) return true;
-            Thread.Sleep(30 * attempt);
+            Thread.Sleep(attempt < 5 ? 2 : 10);
         }
         return false;
     }
+
+    /// <summary>
+    /// Elige la pagina del SPD de DDR4 (0: bytes 0-255, 1: bytes 256-511) con un "send byte"
+    /// a 0x36 / 0x37, como CPU-Z o el driver ee1004 de Linux. Algunos modulos no confirman
+    /// el comando (NACK) aunque cambian de pagina: el resultado no se mira.
+    /// </summary>
+    public void SpdPage(int page) => Xfer(page == 0 ? (byte)0x36 : (byte)0x37, read: false, 0, ProtoByte, 0, out _);
+
+    /// <summary>Lee un byte. Null si el dispositivo no responde.</summary>
+    public byte? ReadByte(byte address, byte command) =>
+        Xfer(address, read: true, command, ProtoByteData, 0, out var value) == 0 ? (byte)value : null;
 
     /// <summary>Lee una palabra (16 bits). Null si el dispositivo no responde.</summary>
     public ushort? ReadWord(byte address, byte command)

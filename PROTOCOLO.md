@@ -131,16 +131,82 @@ Direcciones en esta PC (escaneo de solo lectura):
 
 | Direccion | Que es | Colmillo |
 |---|---|---|
-| `0x52`, `0x53` | SPD de cada modulo (configuracion de fabrica) | **nunca** se escribe |
-| `0x5A`, `0x5B` | Controlador de luz de cada modulo (SPD + 8) | lee el modelo y escribe |
+| `0x52`, `0x53` | SPD de cada modulo (configuracion de fabrica) | solo lee (tipo, fabricante, numero de parte) |
+| `0x36`, `0x37` | Cambio de pagina del SPD de DDR4 | "send byte" para leer la pagina 1 y volver a la 0 |
+| `0x5A`, `0x5B` | Controlador de luz de cada modulo (SPD + 8) | lee y escribe |
 
 - Lecturas: **palabra** (protocolo 3); el valor util va en el byte alto. Una lectura de
   un byte devuelve basura (el eco de la direccion).
 - Escrituras: un byte. Algunas fallan con `0x800701B1` (sin respuesta); se reintenta
-  hasta 5 veces, como OpenRGB.
-- Modelo (`0x06`): `0x23` Beast DDR4, `0x21` Beast blanco DDR4.
-- Cada cambio va entre `08=53` (abrir) y `08=44` (aplicar), con 10 ms entre pasos.
-- Antes de cambiar de modo: abrir, `0B=0` en cada modulo (indice: todos sincronizados), aplicar.
+  hasta 30 veces, como MSI Center.
+- Cada cambio va entre `08=53` (abrir) y `08=44` (aplicar).
+
+### Deteccion
+
+El modelo (`0x06`) daba `0x23` (Beast DDR4) o `0x21` (Beast blanco), pero desde que FURY
+CTRL actualizo los modulos (su servicio los llama `KingstonFury_Beast_Refresh`) devuelve
+`0x00`, abierto o cerrado. El resto de los registros sigue igual. Con solo ese chequeo la RAM
+"dejaba de reconocerse" y quedaba apagada. MSI Center y FURY CTRL identifican el modulo por
+el SPD, y Colmillo hace lo mismo: un controlador en SPD + 8 cuenta si da el modelo o si su
+SPD es DDR4 (byte 2 = `0x0C`) de Kingston (pagina 1, bytes 320-321 = `01 98`). En esta PC:
+`KF3200C16D4/32GX`. La pagina del SPD siempre vuelve a 0.
+
+### Secuencia de MSI Center
+
+Sacada de `KingstonDDR5_Change` en `MSI Center\Mystic Light\Lib\MBAPI_x86.dll`
+(desensamblada con capstone; maneja tambien los DDR4, la lista de soporte de Mystic Light
+pone "Kingston Fury Beast DDR5 RGB" aunque el modulo sea DDR4):
+
+1. Toma `Global\Access_SMBUS.HTP.Method` (espera hasta 1 s) y **lo retiene toda la
+   secuencia**. Antes Colmillo lo tomaba por transferencia, y el servicio de Kingston o
+   Mystic Light podian escribir entre el "abrir" y el "aplicar".
+2. `08=53` en todos, 55 ms.
+3. Si hay mas de un modulo: `0B = n - i - 1` en el modulo i (el primero recibe el indice
+   mas alto). Colmillo ponia `0B=0` en todos: cada uno se creia el primero y los efectos
+   animados se desfasaban (una barra respiraba antes o mas fuerte que la otra).
+4. `08=44`, 30 ms.
+5. `08=53`, 55 ms; registros del efecto con 5 ms entre cada uno (todos los modulos seguidos);
+   `27` = cantidad de modulos; `08=44`. Suelta el mutex y espera 50 ms.
+
+Valores de MSI por efecto (el indice es el de su lista de estilos):
+
+| MSI | Registros |
+|---|---|
+| 0 estatico | `09=00 20=50 30=01 31-33=RGB` |
+| 1 arcoiris | `09=01 0C=01 0D=00 0E=19 20=50` |
+| 3 respiracion | `09=03 16=0F 17=05 18=05 19=0F 1A=01 1B=64 1C=40 1D=01 20=50 0D=00 0E=00 30=01 31-33=RGB` |
+| 4 dinamico | `09=04 12-13=012C (300 ms) 14-15=05DC (1500 ms) 20=50 30=0A 0D=00 0E=00` |
+| 6 cometa | `09=06 0C=01 0D=00 0E=62 20=50 26=07 30=01 31-33=RGB` |
+| 9 llama | `09=09 0C=01 0E=40 20=50 0D=00` |
+| 10 espectro | `09=01 0C=01 0E=40 20=50 0D=04` |
+
+Los tiempos del dinamico son de 16 bits (alto, bajo); Colmillo mandaba `ms >> 8` y un 1
+fijo en el byte bajo. El minimo de la respiracion (`1D`) es 1, no 0. MSI fija el brillo en
+80 (`20=50`); Colmillo manda el del slider.
+
+### Modulo que deja de responder
+
+Con el espectro y Mystic Light (`LEDKeeper2.exe`, lo lanza una tarea de MSI al iniciar
+sesion) escribiendo a la vez, `0x5B` dejo de confirmar (NACK) y Colmillo siguio solo con
+`0x5A`: una barra quedaba congelada en un color. Ahora se recuerda cuantos modulos habia y,
+si falta uno, se vuelve a buscar a los 2, 5, 15 y 60 s. Tras reiniciar la PC los dos vuelven
+a dar el modelo (`0x06 = 0x23`): el `0x00` de antes era el mismo estado trabado.
+
+### Sincronia con el mouse
+
+En "todos juntos" cada dispositivo prepara su cambio y espera en una barrera (`LightSync`)
+antes del comando que arranca la animacion (RAM: el `08=44` final; grafica: `12`; mouse:
+`0F:02`). Asi arrancan en el mismo instante. El ritmo de la respiracion del mouse lo fija su
+firmware; el de la RAM (`16-19`) se calibra en Ajustes (por defecto el mas lento). En grupo no
+hay velocidad: RAM y grafica van a la mas lenta.
+
+### Programas que pisan la luz
+
+`FURYController_Service` (`Program Files (x86)\Kingston Fury\FuryCTRL_SDK`, lo instala FURY
+CTRL o MSI Center) arranca con Windows, reaplica su efecto ("Keep LED effect") y escribe el
+bus con su propio driver (NTIOLib). Usa el mismo mutex, pero por transferencia. Colmillo
+lo detiene al iniciar (ajuste "Detener el servicio de Kingston FURY al iniciar"); no lo
+deshabilita. PawnIO arranca a demanda: si nadie lo inicio, Colmillo (elevado) lo inicia.
 
 | Registro | Uso |
 |---|---|
@@ -152,7 +218,6 @@ Direcciones en esta PC (escaneo de solo lectura):
 | `30` | cantidad de colores; `31..` R, G, B de cada color |
 
 Arcoiris y espectro son el mismo modo: los distingue el retardo (`0D` = 0 o 4).
-Verificado contra los dos modulos reales (estatico rojo y espectro).
 
 ## Grafica: Gigabyte RX 9060 XT Gaming OC 16G
 
@@ -174,6 +239,17 @@ de modelos anteriores (y de OpenRGB) sino un controlador nuevo:
 | `12 01 efecto velocidad brillo R G B 0 0` | cambiar el efecto (al instante, no se guarda) |
 | `13 01` | guardar el efecto en la memoria de la tarjeta |
 | `16 01 ...` | color en tiempo real para la sincronizacion de RGB Fusion |
+| `17 01` | leer si salio del modo app (byte 2 = 1: todavia no) |
+| `18 01` | "LedAPPClose": salir del modo en que lo maneja una app |
+
+**Tras reiniciar la PC el controlador arranca en modo app** (el de la sincronizacion de RGB
+Fusion, `16` cuadro a cuadro) y no hace caso a `12` hasta recibir `18`. Por eso la grafica
+solo cambiaba con Gigabyte Control Center abierto: `LedControlEx.SettingApply` de `ucVga.dll`
+manda `18`, lee `17` y recien ahi `12`. GCC solo usa estos 7 comandos (`10`-`13`, `16`-`18`).
+Colmillo manda `18` antes de cada cambio pero **no lee `17`**: en esta tarjeta esa lectura
+falla y la escritura siguiente de la misma sesion de ADL tambien (probado: `w18=0 w17=0
+r17=-1 w12=-1`; sin leer, `w18=0 w12=0`). IL leido con un volcador propio sobre
+`System.Reflection.Metadata` (`ucVga.dll` es .NET).
 
 Efectos (`12`): 0 apagado, 1 estatico, 2 respiracion, 3 destello, 4 doble destello,
 5 ciclo de colores. Velocidad y brillo van de 0 a 10. Apagado manda el color en cero.
@@ -192,6 +268,67 @@ llama a `I2CApiEx.SendData(..., nSavePort = 194)` pero adentro pisa la direccion
 Gigabyte publica sus modulos en
 `mb.download.gigabyte.com/FileList/Swhttp/LiveUpdate4/GCC/<ApName>/ver2.ini` y
 `.../GCC/<ApName>/<ApName>_<version>.exe` (NSIS firmado, se instala con `/S`).
+
+### Deteccion de la grafica
+
+La primera transferencia por ADL a veces falla (justo al iniciar sesion, o la lectura que
+toca en el turno "malo" del controlador). Colmillo buscaba una sola vez y quedaba "no
+encontrada" hasta reiniciarlo: parecia que hacia falta abrir RGB Fusion, pero no. Probado con
+Gigabyte Control Center cerrado: responde en el adaptador 0 (y en el 3, la misma tarjeta).
+Ahora reintenta a 1, 3, 5, 10, 20 y 30 s, y vuelve a buscar al salir de suspension.
+
+## Ventiladores de la grafica (ADLX)
+
+En RDNA 4 el Overdrive8 de ADL responde `ADL_ERR_NOT_SUPPORTED` (-9). Adrenalin usa
+**ADLX** (`amdadlx64.dll`, viene con el driver). Es C++ con tablas virtuales; Colmillo las
+llama por indice, sacado de los encabezados del SDK (GPUOpen-LibrariesAndSDKs/ADLX,
+`SDK/Include`). No necesita administrador.
+
+- `ADLXQueryFullVersion` (el driver de esta PC da 1.5) y `ADLXInitialize(version, &sistema)`.
+- `IADLXSystem`: 1 `GetGPUs`, 8 `GetGPUTuningServices`, 9 `GetPerformanceMonitoringServices`.
+- `IADLXGPUTuningServices`: 10 `IsSupportedManualFanTuning`, 16 `GetManualFanTuning`
+  (devuelve la interfaz base: `QueryInterface(L"IADLXManualFanTuning")`, y
+  `L"IADLXManualFanTuning1"` para la curva de fabrica).
+- `IADLXManualFanTuning`: 3 rangos, 4 curva actual, 5 curva vacia, 6 validar, 7 aplicar,
+  8-10 cero RPM. `IADLXManualFanTuning1`: 23 curva de fabrica, 27 cero RPM de fabrica.
+- Lista de estados: 3 `Size`, 11 `At`; estado: 3/4 velocidad, 5/6 temperatura.
+- `IADLXPerformanceMonitoringServices` 18 `GetCurrentGPUMetrics(gpu, &m)`; metricas:
+  7 temperatura, 8 punto caliente, 11 RPM.
+
+RX 9060 XT: 5 puntos, velocidad 20-100 %, temperatura 25-100 °C, cero RPM disponible. Curva
+de fabrica `30:20 50:36 58:52 67:68 75:100`, con cero RPM. El driver rechaza una curva
+cuya temperatura baja de un punto al siguiente (`IsValidFanTuningStates` da el indice).
+
+## Tuning de la grafica (ADLX)
+
+`IADLXGPUTuningServices` 12 `GetAutoTuning` y 13 `GetPresetTuning` (devuelven la interfaz
+base: `QueryInterface(L"IADLXGPUAutoTuning")` / `L"IADLXGPUPresetTuning"`).
+
+- `IADLXGPUAutoTuning`: 3-5 `IsSupported` (undervolt, OC GPU, OC VRAM), 6-8 `IsCurrent`,
+  9-11 `Start*` con un listener (`IADLXGPUAutoTuningCompleteListener`: tabla con un solo
+  metodo, `OnGPUAutoTuningComplete`). Colmillo lo arma en memoria nativa.
+- `IADLXGPUPresetTuning`: 3-7 `IsSupported`, 8-12 `IsCurrent`, 13-17 `Set` (PowerSaver,
+  Quiet, Balanced, Turbo, Rage).
+- `ADLX_RESET_NEEDED` (18): hay que llamar `ResetToFactory` (5), que borra tambien la curva
+  de ventiladores; Colmillo la repone.
+
+RX 9060 XT: overclock automatico de GPU (no de VRAM ni undervolt) y Quiet / Balanced / Rage.
+Son los modos que ofrece Gigabyte Control Center para esta tarjeta.
+
+## Metricas
+
+- Grafica y FPS: ADLX `GetCurrentGPUMetrics` (18) y `GetCurrentFPS` (20; -1 sin juego 3D).
+- CPU por nucleo: contadores de Windows (PDH) `\Processor Information(*)\% Processor Utility`,
+  `% Processor Performance` y `Processor Frequency`; reloj = frecuencia x rendimiento / 100.
+  Los hilos se agrupan por nucleo fisico con `GetLogicalProcessorInformation`.
+- Temperatura Ryzen: SMN `0x59800` (Tctl, bits 31:21 en octavos, -49 si el bit 19) y
+  `0x59954 + 4n` (CCD n, bit 11 valida). Necesita el modulo `AMDFamily17.bin` de
+  PawnIO.Modules 0.2.11 (`ioctl_read_smn`, incluido en `Assets/PawnIO`, mismo zip y hash
+  de SmbusPIIX4 que el de la RAM).
+  Ryzen no tiene sensor por nucleo.
+- Overlay: ventana WPF transparente, `WS_EX_TRANSPARENT | WS_EX_NOACTIVATE`, siempre arriba.
+  No inyecta nada en el juego (seguro con Vanguard/EAC); no se ve en pantalla completa
+  exclusiva de DX9/DX11 antiguos. `Ctrl+Shift+O` lo muestra u oculta.
 
 ## Macros
 

@@ -37,6 +37,40 @@
 
         <Border Style="{StaticResource Card}" Margin="0,18,0,0">
             <StackPanel>
+                <TextBlock Style="{StaticResource H2}" Text="Componentes" Margin="0,0,0,4" />
+                <TextBlock Style="{StaticResource Sub}" FontSize="12" Margin="0,0,0,14"
+                           Text="Lo que cada uno necesita. Colmillo lo prepara al iniciar: arranca el driver de la RAM y aparta lo que pisa la luz." />
+                <Grid x:Name="Parts">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="170" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                </Grid>
+                <CheckBox Style="{StaticResource Switch}" x:Name="StopConflicts" Margin="0,16,0,0" Checked="StopConflicts_Changed" Unchecked="StopConflicts_Changed">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Body}" Text="Apartar lo que pisa la luz de la RAM al iniciar" />
+                        <TextBlock Style="{StaticResource Sub}" FontSize="12"
+                                   Text="Detiene el servicio de Kingston FURY CTRL y cierra LEDKeeper2 de Mystic Light (MSI Center). Los dos escriben la RAM al mismo tiempo que Colmillo, y una barra puede quedar apagada, desfasada o sin responder. No se desinstala nada." />
+                    </StackPanel>
+                </CheckBox>
+                <StackPanel Margin="0,18,0,0">
+                    <Grid>
+                        <TextBlock Style="{StaticResource Body}" Text="Ritmo de la RAM al respirar junto al mouse" />
+                        <TextBlock x:Name="BreathStepValue" Style="{StaticResource Body}" HorizontalAlignment="Right" Foreground="{DynamicResource Accent600}" />
+                    </Grid>
+                    <TextBlock Style="{StaticResource Sub}" FontSize="12" Margin="0,2,0,8"
+                               Text="El ciclo del mouse lo fija su firmware. Si en &quot;Todos juntos&quot; la RAM se adelanta, muévelo a la derecha; si se atrasa, a la izquierda. Al soltarlo, los tres vuelven a arrancar a la vez." />
+                    <Slider x:Name="BreathStep" Minimum="1" Maximum="9" IsSnapToTickEnabled="True" TickFrequency="1"
+                            ValueChanged="BreathStep_Changed" PreviewMouseUp="BreathStep_Released" />
+                </StackPanel>
+                <WrapPanel Margin="0,16,0,0">
+                    <Button Style="{StaticResource Outline}" Content="Volver a buscar RAM y gráfica" Click="Rescan_Click" Margin="0,0,8,8" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+            <StackPanel>
                 <TextBlock Style="{StaticResource H2}" Text="Mouse" Margin="0,0,0,14" />
                 <Grid x:Name="Info">
                     <Grid.ColumnDefinitions>

@@ -83,7 +83,11 @@ public sealed class DeviceService : IDisposable
         ApplyDpi(m);
     });
 
-    public Task ApplyLightingAsync() => Run(ApplyLighting);
+    public Task ApplyLightingAsync(LightSync? sync = null) => LightSync.Join(sync, start => Run(m =>
+    {
+        start();
+        ApplyLighting(m);
+    }));
 
     public Task ApplyButtonsAsync() => Run(ApplyButtons);
 

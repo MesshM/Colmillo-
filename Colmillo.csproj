@@ -9,7 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Colmillo</AssemblyName>
     <RootNamespace>Colmillo</RootNamespace>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\colmillo.ico</ApplicationIcon>
 
@@ -34,6 +34,8 @@
     <Resource Include="Assets\imagotipo.png" />
     <!-- Modulo SMBus de PawnIO.Modules 0.2.11 (LGPL-2.1, Assets/PawnIO/COPYING). -->
     <EmbeddedResource Include="Assets\PawnIO\SmbusPIIX4.bin" LogicalName="Colmillo.SmbusPIIX4.bin" />
+    <!-- Temperatura de CPU Ryzen (opcional): AMDFamily17.bin del mismo PawnIO.Modules. -->
+    <EmbeddedResource Include="Assets\PawnIO\AMDFamily17.bin" LogicalName="Colmillo.AMDFamily17.bin" Condition="Exists('Assets\PawnIO\AMDFamily17.bin')" />
   </ItemGroup>
 
 </Project>

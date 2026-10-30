@@ -35,6 +35,11 @@ public sealed unsafe class GigabyteGpu : IDisposable
     // 0x10 (version) tambien existe, pero el controlador responde una sola lectura por
     // sesion de ADL: la siguiente falla hasta reabrir. Solo se lee el modelo.
     const byte CmdModel = 0x11, CmdSet = 0x12, CmdSave = 0x13;
+    // 0x18 "LedAPPClose": saca al controlador del modo en que lo maneja una app (la
+    // sincronizacion de RGB Fusion, 0x16 cuadro a cuadro). Tras reiniciar la PC arranca asi
+    // y no hace caso a 0x12 hasta recibirlo: por eso solo funcionaba con RGB Fusion abierto.
+    // Es lo que hace Gigabyte Control Center (LedControlEx.SettingApply) antes de cada cambio.
+    const byte CmdAppClose = 0x18;
 
     [StructLayout(LayoutKind.Sequential)]
     struct AdlI2C
@@ -105,8 +110,12 @@ public sealed unsafe class GigabyteGpu : IDisposable
     /// Cambia el efecto al instante (no se guarda en la grafica: ver <see cref="Save"/>).
     /// Brillo 0-100 y velocidad 1-5, como el resto de Colmillo; el firmware usa 0-10.
     /// </summary>
-    public bool Apply(GpuEffect effect, Rgb color, int brightness, int speed)
+    /// <param name="start">Se llama justo antes del comando que arranca el efecto (sincronia).</param>
+    public bool Apply(GpuEffect effect, Rgb color, int brightness, int speed, Action? start = null)
     {
+        // Sin leer 0x17: en esta tarjeta esa lectura falla y deja la sesion de ADL sin poder
+        // escribir (probado); Gigabyte espera 200 ms tras 0x18 y sigue igual si falla.
+        if (Write(Packet(CmdAppClose))) Thread.Sleep(80);
         var c = effect == GpuEffect.Off ? default : color.ToLed();
         var p = Packet(CmdSet);
         p[2] = (byte)effect;
@@ -115,6 +124,7 @@ public sealed unsafe class GigabyteGpu : IDisposable
         p[5] = c.R;
         p[6] = c.G;
         p[7] = c.B;
+        start?.Invoke();
         return Write(p);
     }
 

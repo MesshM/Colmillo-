@@ -162,6 +162,25 @@ public static class SystemIntegration
         return self.PrivateMemorySize64 / (1024 * 1024);
     }
 
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
+
+    /// <summary>
+    /// Una ventana con WindowStyle=None no tiene WS_CAPTION ni los botones de sistema, y DWM
+    /// no anima minimizar/maximizar/restaurar. Con los estilos de vuelta las animaciones son
+    /// las de Windows; WindowChrome sigue ocupando todo el area y no se ve barra de titulo.
+    /// </summary>
+    public static void EnableWindowAnimations(IntPtr hwnd)
+    {
+        const int GwlStyle = -16;
+        const long WsCaption = 0x00C00000, WsSysMenu = 0x00080000, WsMinimizeBox = 0x00020000, WsMaximizeBox = 0x00010000;
+        var style = (long)GetWindowLongPtr(hwnd, GwlStyle);
+        SetWindowLongPtr(hwnd, GwlStyle, (IntPtr)(style | WsCaption | WsSysMenu | WsMinimizeBox | WsMaximizeBox));
+    }
+
     /// <summary>Esquinas redondeadas de Windows 11 para una ventana sin marco.</summary>
     public static void RoundCorners(IntPtr hwnd)
     {

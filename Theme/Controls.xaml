@@ -108,6 +108,40 @@
         </Setter>
     </Style>
 
+    <!-- Opcion de un dispositivo, debajo de su capsula. -->
+    <Style x:Key="SubPill" TargetType="RadioButton" BasedOn="{StaticResource NavPill}">
+        <Setter Property="Height" Value="38" />
+        <Setter Property="Margin" Value="16,0,0,4" />
+        <Setter Property="FontSize" Value="13.5" />
+    </Style>
+
+    <!-- ===== Capsula de dispositivo: estado y, al abrirla, sus opciones ===== -->
+    <Style x:Key="DeviceCapsule" TargetType="ToggleButton">
+        <Setter Property="Margin" Value="0,0,0,6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Bd" Padding="12,10" CornerRadius="{StaticResource RadiusBox}"
+                            Background="{DynamicResource PillHover}" BorderBrush="Transparent" BorderThickness="1.5">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Line}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PillActive}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Accent500}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===== Segmentado (RadioButton en fila) ===== -->
     <Style x:Key="Segment" TargetType="RadioButton">
         <Setter Property="MinWidth" Value="64" />

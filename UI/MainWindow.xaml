@@ -39,39 +39,36 @@
             <Button Style="{StaticResource CloseButton}" Content="&#xE8BB;" Click="Close_Click" ToolTip="Cerrar a la bandeja" />
         </StackPanel>
 
-        <!-- Sidebar -->
-        <DockPanel Grid.Row="1" Grid.Column="0" Margin="12,30,12,16" LastChildFill="False">
-            <StackPanel DockPanel.Dock="Top" x:Name="Nav">
-                <RadioButton Style="{StaticResource NavPill}" Tag="&#xEC4A;" Content="Rendimiento" GroupName="nav" Checked="Nav_Checked" x:Name="NavPerformance" />
-                <RadioButton Style="{StaticResource NavPill}" Tag="&#xE706;" Content="Iluminación" GroupName="nav" Checked="Nav_Checked" />
-                <RadioButton Style="{StaticResource NavPill}" Tag="&#xE962;" Content="Botones" GroupName="nav" Checked="Nav_Checked" />
-                <RadioButton Style="{StaticResource NavPill}" Tag="&#xE7C8;" Content="Macros" GroupName="nav" Checked="Nav_Checked" />
-                <RadioButton Style="{StaticResource NavPill}" Tag="&#xE7C9;" Content="Puntero de Windows" GroupName="nav" Checked="Nav_Checked" />
-            </StackPanel>
-
+        <!-- Sidebar: iluminacion (de todos), una capsula por dispositivo con sus opciones, y ajustes. -->
+        <DockPanel Grid.Row="1" Grid.Column="0" Margin="12,30,12,16">
             <RadioButton DockPanel.Dock="Bottom" Style="{StaticResource NavPill}" Tag="&#xE713;" Content="Ajustes"
-                         GroupName="nav" Checked="Nav_Checked" Margin="0" />
+                         GroupName="nav" Checked="Nav_Checked" Margin="0,8,0,0" x:Name="NavSettings" />
 
-            <!-- Estado del mouse -->
-            <Border DockPanel.Dock="Bottom" Margin="0,0,0,10" Padding="12,10" CornerRadius="{StaticResource RadiusBox}"
-                    Background="{DynamicResource PillHover}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid Width="34" Height="34">
-                        <Ellipse Fill="{DynamicResource AccentSoft}" />
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE962;" FontSize="16" Foreground="{DynamicResource Accent600}" />
-                        <Ellipse x:Name="StatusDot" Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                 Fill="{DynamicResource Ink300}" Stroke="{DynamicResource Bg}" StrokeThickness="2" />
-                    </Grid>
-                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="Razer Cobra" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource Ink800}" />
-                        <TextBlock x:Name="StatusText" Text="Buscando..." FontSize="11.5" Foreground="{DynamicResource Ink400}" />
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel x:Name="Nav">
+                    <RadioButton Style="{StaticResource NavPill}" Tag="&#xE706;" Content="Iluminación" GroupName="nav" Checked="Nav_Checked" x:Name="NavLighting" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="DISPOSITIVOS" Margin="14,14,0,8" />
+
+                    <ToggleButton Style="{StaticResource DeviceCapsule}" x:Name="MouseCapsule" Click="Capsule_Click" />
+                    <StackPanel x:Name="MouseOptions" Visibility="Collapsed" Margin="0,0,0,6">
+                        <RadioButton Style="{StaticResource SubPill}" Tag="&#xEC4A;" Content="Rendimiento" GroupName="nav" Checked="Nav_Checked" x:Name="NavPerformance" />
+                        <RadioButton Style="{StaticResource SubPill}" Tag="&#xE962;" Content="Botones" GroupName="nav" Checked="Nav_Checked" />
+                        <RadioButton Style="{StaticResource SubPill}" Tag="&#xE7C8;" Content="Macros" GroupName="nav" Checked="Nav_Checked" />
+                        <RadioButton Style="{StaticResource SubPill}" Tag="&#xE7C9;" Content="Puntero de Windows" GroupName="nav" Checked="Nav_Checked" />
                     </StackPanel>
-                </Grid>
-            </Border>
+
+                    <ToggleButton Style="{StaticResource DeviceCapsule}" x:Name="GpuCapsule" Click="Capsule_Click" />
+                    <StackPanel x:Name="GpuOptions" Visibility="Collapsed" Margin="0,0,0,6">
+                        <RadioButton Style="{StaticResource SubPill}" Tag="&#xE9CA;" Content="Ventiladores" GroupName="nav" Checked="Nav_Checked" x:Name="NavFans" />
+                        <RadioButton Style="{StaticResource SubPill}" Tag="&#xEC4A;" Content="Overclock" GroupName="nav" Checked="Nav_Checked" />
+                        <RadioButton Style="{StaticResource SubPill}" Tag="&#xE9D9;" Content="Métricas" GroupName="nav" Checked="Nav_Checked" />
+                    </StackPanel>
+
+                    <!-- La RAM solo tiene luz: su capsula lleva a Iluminacion. -->
+                    <ToggleButton Style="{StaticResource DeviceCapsule}" x:Name="RamCapsule" Click="Capsule_Click" />
+                </StackPanel>
+            </ScrollViewer>
         </DockPanel>
 
         <!-- Lienzo: esquina superior izquierda redondeada, sin margen abajo ni a la derecha. -->
